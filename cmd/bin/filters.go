@@ -69,7 +69,7 @@ func parseSince(v string) (string, error) {
 			}
 		}
 	}
-	return "", fmt.Errorf("--since には 24h・7d・2w・3m・1y のような期間か、2026-09-01 のような日付を指定してください: %s", v)
+	return "", fmt.Errorf(T("--since には 24h・7d・2w・3m・1y のような期間か、2026-09-01 のような日付を指定してください: %s"), v)
 }
 
 var listValueFlags = map[string]string{
@@ -89,17 +89,17 @@ func filterFromArgs(p parsedArgs) (listFilter, []string, int) {
 	if v, ok := p.value("limit"); ok {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 1 {
-			fail(fmt.Errorf("--limit には1以上の数を指定してください"))
+			fail(fmt.Errorf(T("--limit には1以上の数を指定してください")))
 		}
 		limit = n
 	}
 	if v, ok := p.value("query"); ok && v != "" {
 		f.Query = v
-		notes = append(notes, "「"+v+"」")
+		notes = append(notes, fmt.Sprintf(T("「%s」"), v))
 	}
 	if v, ok := p.value("lang"); ok && v != "" {
 		f.Exts = parseLangs(v)
-		notes = append(notes, "言語: "+v)
+		notes = append(notes, fmt.Sprintf(T("言語: %s"), v))
 	}
 	if v, ok := p.value("since"); ok && v != "" {
 		s, err := parseSince(v)
@@ -107,16 +107,16 @@ func filterFromArgs(p parsedArgs) (listFilter, []string, int) {
 			fail(err)
 		}
 		f.Since = s
-		notes = append(notes, v+"以内")
+		notes = append(notes, fmt.Sprintf(T("%s以内"), v))
 	}
 	if v, ok := p.value("sort"); ok && v != "" {
 		switch v {
 		case "updated", "created", "oldest":
 			f.Sort = v
 		default:
-			fail(fmt.Errorf("--sort には updated / created / oldest のどれかを指定してください"))
+			fail(fmt.Errorf(T("--sort には updated / created / oldest のどれかを指定してください")))
 		}
-		notes = append(notes, map[string]string{"updated": "更新が新しい順", "created": "作成が新しい順", "oldest": "作成が古い順"}[v])
+		notes = append(notes, map[string]string{"updated": T("更新が新しい順"), "created": T("作成が新しい順"), "oldest": T("作成が古い順")}[v])
 	}
 	return f, notes, limit
 }
@@ -127,10 +127,10 @@ func printGistTable(label string, notes []string, items []GistSummary, total int
 	}
 	if len(items) == 0 {
 		fmt.Println(bold(label))
-		fmt.Println(dim("  該当するGistはありません。"))
+		fmt.Println(dim(T("  該当するGistはありません。")))
 		return
 	}
-	fmt.Println(bold(fmt.Sprintf("%s %d件", label, total)))
+	fmt.Println(bold(fmt.Sprintf(T("%s %d件"), label, total)))
 	w := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
 	for _, g := range items {
 		names := make([]string, len(g.Files))
@@ -143,11 +143,11 @@ func printGistTable(label string, notes []string, items []GistSummary, total int
 		} else if showOwner {
 			owner = "\t"
 		}
-		fmt.Fprintf(w, "  %s\t%s%s\t%s\t%s\t%s\n", cyan(g.ID), owner, bold(gistTitle(g.Title, names)), visibilityLabel(g.Visibility), dim(fmt.Sprintf("%dファイル", len(g.Files))), dim(formatDate(g.UpdatedAt)))
+		fmt.Fprintf(w, "  %s\t%s%s\t%s\t%s\t%s\n", cyan(g.ID), owner, bold(gistTitle(g.Title, names)), visibilityLabel(g.Visibility), dim(fmt.Sprintf(Tn("%dファイル", len(g.Files)), len(g.Files))), dim(formatDate(g.UpdatedAt)))
 	}
 	w.Flush()
 	if total > len(items) {
-		fmt.Println(dim(fmt.Sprintf("  ...他%d件(--limit で件数を指定)", total-len(items))))
+		fmt.Println(dim(fmt.Sprintf(T("  ...他%d件(--limit で件数を指定)"), total-len(items))))
 	}
 }
 
@@ -155,7 +155,7 @@ func printGistTable(label string, notes []string, items []GistSummary, total int
 func cmdTimeline(args []string) {
 	p := parseArgs(args, listValueFlags, nil)
 	if _, ok := p.value("user"); ok {
-		fail(fmt.Errorf("特定のユーザーの一覧は bin list -u <handle> を使ってください"))
+		fail(fmt.Errorf(T("特定のユーザーの一覧は bin list -u <handle> を使ってください")))
 	}
 	f, notes, limit := filterFromArgs(p)
 	cfg, session := optionalSession()
@@ -163,5 +163,5 @@ func cmdTimeline(args []string) {
 	if err != nil {
 		fail(err)
 	}
-	printGistTable("タイムライン", notes, items, total, true)
+	printGistTable(T("タイムライン"), notes, items, total, true)
 }

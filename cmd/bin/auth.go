@@ -78,7 +78,7 @@ func refreshAccessToken(cfg Config, session *Session) error {
 		RefreshToken string `json:"refresh_token"`
 	}
 	if err := json.Unmarshal(respBody, &out); err != nil || out.AccessToken == "" || out.RefreshToken == "" {
-		return fmt.Errorf("トークン更新レスポンスの解析に失敗しました: %s", string(respBody))
+		return fmt.Errorf(T("トークン更新レスポンスの解析に失敗しました: %s"), string(respBody))
 	}
 
 	session.AccessToken = out.AccessToken

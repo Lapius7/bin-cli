@@ -75,7 +75,7 @@ func fetchAuthUser(cfg Config, session *Session) (*authUser, error) {
 	}
 	var u authUser
 	if err := json.Unmarshal(body, &u); err != nil {
-		return nil, fmt.Errorf("レスポンスの解析に失敗しました: %w", err)
+		return nil, fmt.Errorf(T("レスポンスの解析に失敗しました: %w"), err)
 	}
 	return &u, nil
 }
@@ -225,7 +225,7 @@ func strOr(p *string, fallback string) string {
 }
 
 func providerName(p string) string {
-	names := map[string]string{"google": "Google", "github": "GitHub", "discord": "Discord", "twitch": "Twitch", "twitter": "X (Twitter)", "spotify": "Spotify", "email": "メール"}
+	names := map[string]string{"google": "Google", "github": "GitHub", "discord": "Discord", "twitch": "Twitch", "twitter": "X (Twitter)", "spotify": "Spotify", "email": T("メール")}
 	if n, ok := names[p]; ok {
 		return n
 	}
@@ -237,7 +237,7 @@ func printRecent(cfg Config, st *gistStats) {
 		return
 	}
 	fmt.Println()
-	sectionTitle("🕘", "最近更新したGist")
+	sectionTitle("🕘", T("最近更新したGist"))
 	for _, g := range st.recent {
 		names := make([]string, len(g.Files))
 		for i, f := range g.Files {
@@ -275,35 +275,35 @@ func cmdWhoami() {
 	if handle != "" {
 		title += " " + dim("@"+handle)
 	} else {
-		title += " " + dim("(ハンドル名未設定)")
+		title += " " + dim(T("(ハンドル名未設定)"))
 	}
 	fmt.Println(title)
 	fmt.Println()
 
-	sectionTitle("👤", "アカウント")
-	printField("ユーザーID", userID)
+	sectionTitle("👤", T("アカウント"))
+	printField(T("ユーザーID"), userID)
 	if au != nil {
-		printField("通知用メール", au.Email)
-		printField("登録日時", formatDate(au.CreatedAt))
-		printField("最終ログイン", formatDate(au.LastSignInAt))
+		printField(T("通知用メール"), au.Email)
+		printField(T("登録日時"), formatDate(au.CreatedAt))
+		printField(T("最終ログイン"), formatDate(au.LastSignInAt))
 	}
 	if prof != nil {
-		printField("言語", strOr(prof.Locale, "-"))
-		printField("タイムゾーン", strOr(prof.Timezone, "-"))
+		printField(T("言語"), strOr(prof.Locale, "-"))
+		printField(T("タイムゾーン"), strOr(prof.Timezone, "-"))
 		if prof.HandleChangedAt != nil {
-			printField("ハンドル変更", formatDate(*prof.HandleChangedAt))
+			printField(T("ハンドル変更"), formatDate(*prof.HandleChangedAt))
 		}
 	}
 	if handle != "" {
-		printField("ユーザーページ", cfg.SiteURL+"/u/"+handle)
+		printField(T("ユーザーページ"), cfg.SiteURL+"/u/"+handle)
 	}
-	printField("プロフィール編集", "https://account.lapius7.com/dashboard")
+	printField(T("プロフィール編集"), "https://account.lapius7.com/dashboard")
 
 	if au != nil {
 		fmt.Println()
-		sectionTitle("🔗", "連携しているログイン方法")
+		sectionTitle("🔗", T("連携しているログイン方法"))
 		if len(au.Identities) == 0 {
-			printField("", dim("(なし)"))
+			printField("", dim(T("(なし)")))
 		}
 		sort.Slice(au.Identities, func(i, j int) bool { return au.Identities[i].CreatedAt < au.Identities[j].CreatedAt })
 		for _, id := range au.Identities {
@@ -311,11 +311,11 @@ func cmdWhoami() {
 			if who == "" {
 				who = firstNonEmpty(id.IdentityData.PreferredUsername, id.IdentityData.UserName)
 			}
-			printField(providerName(id.Provider), fmt.Sprintf("%s %s", who, dim("最終ログイン "+formatDate(id.LastSignInAt))))
+			printField(providerName(id.Provider), fmt.Sprintf("%s %s", who, dim(fmt.Sprintf(T("最終ログイン %s"), formatDate(id.LastSignInAt)))))
 		}
 
 		fmt.Println()
-		sectionTitle("🔐", "2段階認証")
+		sectionTitle("🔐", T("2段階認証"))
 		verified := 0
 		for _, f := range au.Factors {
 			if f.Status == "verified" {
@@ -323,40 +323,40 @@ func cmdWhoami() {
 			}
 		}
 		if verified > 0 {
-			printField("状態", green(fmt.Sprintf("有効(%d件)", verified)))
+			printField(T("状態"), green(fmt.Sprintf(T("有効(%d件)"), verified)))
 		} else {
-			printField("状態", yellow("未設定"))
+			printField(T("状態"), yellow(T("未設定")))
 		}
 	} else if authErr != nil {
 		fmt.Println()
-		warn("アカウントの詳細(連携・2段階認証)は取得できませんでした: %v", authErr)
+		warn(T("アカウントの詳細(連携・2段階認証)は取得できませんでした: %v"), authErr)
 	}
 
 	fmt.Println()
 	sectionTitle("📄", "Gist")
 	st, err := collectStats(cfg, session, userID)
 	if err != nil {
-		warn("Gistの集計に失敗しました: %v", err)
+		warn(T("Gistの集計に失敗しました: %v"), err)
 	} else {
-		printField("合計", fmt.Sprintf("%d件 %s", st.total, dim(fmt.Sprintf("(公開 %d / 限定公開 %d / 非公開 %d)", st.public, st.unlisted, st.private))))
-		printField("ファイル", fmt.Sprintf("%dファイル · %s", st.files, formatSize(st.bytes)))
+		printField(T("合計"), fmt.Sprintf(T("%d件 %s"), st.total, dim(fmt.Sprintf(T("(公開 %d / 限定公開 %d / 非公開 %d)"), st.public, st.unlisted, st.private))))
+		printField(T("ファイル"), fmt.Sprintf(Tn("%dファイル · %s", st.files), st.files, formatSize(st.bytes)))
 		if st.latest != nil {
-			printField("最終更新", formatDate(st.latest.UpdatedAt))
+			printField(T("最終更新"), formatDate(st.latest.UpdatedAt))
 		}
 		if st.truncated {
-			printField("", dim("(件数が多いため先頭3000件のみ集計)"))
+			printField("", dim(T("(件数が多いため先頭3000件のみ集計)")))
 		}
 		printRecent(cfg, st)
 	}
 
 	fmt.Println()
-	sectionTitle("💻", "このCLI")
+	sectionTitle("💻", T("このCLI"))
 	if claims := tokenExpiry(session.AccessToken); !claims.IsZero() {
-		printField("アクセストークン", "有効期限 "+claims.Local().Format("2006-01-02 15:04")+dim("(期限切れ後は自動更新)"))
+		printField(T("アクセストークン"), fmt.Sprintf(T("有効期限 %s"), claims.Local().Format("2006-01-02 15:04"))+dim(T("(期限切れ後は自動更新)")))
 	}
-	printField("セッション保存先", sessionFilePath())
-	printField("接続先", cfg.SiteURL)
-	printField("バージョン", version)
+	printField(T("セッション保存先"), sessionFilePath())
+	printField(T("接続先"), cfg.SiteURL)
+	printField(T("バージョン"), version)
 }
 
 func cmdUser(args []string) {
@@ -378,7 +378,7 @@ func cmdUser(args []string) {
 	if prof == nil {
 		// ハンドル名が変更されていれば、新しいハンドルで引き直す
 		if renamed := resolveRenamedHandle(cfg, handle); renamed != "" {
-			warn("@%s は @%s に変更されています", handle, renamed)
+			warn(T("@%s は @%s に変更されています"), handle, renamed)
 			handle = renamed
 			prof, err = fetchProfileByHandle(cfg, handle)
 			if err != nil {
@@ -387,39 +387,39 @@ func cmdUser(args []string) {
 		}
 	}
 	if prof == nil {
-		fail(fmt.Errorf("@%s というユーザーは見つかりません", handle))
+		fail(fmt.Errorf(T("@%s というユーザーは見つかりません"), handle))
 	}
 
 	fmt.Printf("%s %s\n\n", bold(strOr(prof.DisplayName, strOr(prof.Handle, handle))), dim("@"+strOr(prof.Handle, handle)))
-	sectionTitle("👤", "プロフィール")
-	printField("ユーザーページ", cfg.SiteURL+"/u/"+strOr(prof.Handle, handle))
-	printField("登録日", formatDate(prof.CreatedAt))
+	sectionTitle("👤", T("プロフィール"))
+	printField(T("ユーザーページ"), cfg.SiteURL+"/u/"+strOr(prof.Handle, handle))
+	printField(T("登録日"), formatDate(prof.CreatedAt))
 	if prof.AvatarURL != nil && *prof.AvatarURL != "" {
-		printField("アイコン", *prof.AvatarURL)
+		printField(T("アイコン"), *prof.AvatarURL)
 	}
 	isMe := session != nil && userIDFromToken(session.AccessToken) == prof.UserID
 	if isMe {
-		printField("", cyan("(あなたのアカウントです。詳しくは bin whoami)"))
+		printField("", cyan(T("(あなたのアカウントです。詳しくは bin whoami)")))
 	}
 
 	fmt.Println()
-	sectionTitle("📄", "公開Gist")
+	sectionTitle("📄", T("公開Gist"))
 	// 本人のセッションで数えると非公開も含まれてしまうので、他人向けの表示は常に未ログイン扱いで集計する
 	st, err := collectStats(cfg, nil, prof.UserID)
 	if err != nil {
 		fail(err)
 	}
-	printField("公開Gist", fmt.Sprintf("%d件", st.total))
-	printField("ファイル", fmt.Sprintf("%dファイル · %s", st.files, formatSize(st.bytes)))
+	printField(T("公開Gist"), fmt.Sprintf(T("%d件"), st.total))
+	printField(T("ファイル"), fmt.Sprintf(Tn("%dファイル · %s", st.files), st.files, formatSize(st.bytes)))
 	if st.latest != nil {
-		printField("最終更新", formatDate(st.latest.UpdatedAt))
+		printField(T("最終更新"), formatDate(st.latest.UpdatedAt))
 	}
 	if st.truncated {
-		printField("", dim("(件数が多いため先頭3000件のみ集計)"))
+		printField("", dim(T("(件数が多いため先頭3000件のみ集計)")))
 	}
 	printRecent(cfg, st)
 	if st.total > len(st.recent) {
-		fmt.Println(dim(fmt.Sprintf("\n  すべて表示: bin list -u %s", strOr(prof.Handle, handle))))
+		fmt.Println(dim(fmt.Sprintf(T("\n  すべて表示: bin list -u %s"), strOr(prof.Handle, handle))))
 	}
 }
 
@@ -437,7 +437,7 @@ func cmdLogout() {
 	}
 	// サーバー側の失効に失敗しても(期限切れ・オフライン等)、手元のセッションは必ず消す
 	doLogout()
-	success("ログアウトしました。")
+	success(T("ログアウトしました。"))
 }
 
 func firstNonEmpty(values ...string) string {

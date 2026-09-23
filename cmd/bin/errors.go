@@ -20,7 +20,7 @@ func apiErrorMessage(body []byte) string {
 	}
 	s := strings.TrimSpace(string(body))
 	if s == "" {
-		return "(空のレスポンス)"
+		return T("(空のレスポンス)")
 	}
 	if len(s) > 200 {
 		s = s[:200] + "…"
@@ -30,16 +30,16 @@ func apiErrorMessage(body []byte) string {
 
 // apiError はHTTPステータスコードとレスポンスボディから、整形済みのエラーを作る。
 func apiError(statusCode int, body []byte) error {
-	return fmt.Errorf("APIエラー(HTTP %d): %s", statusCode, apiErrorMessage(body))
+	return fmt.Errorf(T("APIエラー(HTTP %d): %s"), statusCode, apiErrorMessage(body))
 }
 
 // sessionExpiredError はセッション切れ(401)専用の、次に何をすればいいか分かるエラー。
 func sessionExpiredError(body []byte) error {
-	return fmt.Errorf("セッションが切れています。`bin login` でログインし直してください(%s)", apiErrorMessage(body))
+	return fmt.Errorf(T("セッションが切れています。`bin login` でログインし直してください(%s)"), apiErrorMessage(body))
 }
 
 // wrapNetworkError はDNS解決失敗・接続拒否など、リクエスト自体が届かなかった場合の
 // Goの生エラー("dial tcp: lookup ...: no such host"等)を分かりやすく言い換える。
 func wrapNetworkError(err error) error {
-	return fmt.Errorf("サーバーに接続できませんでした。ネットワーク接続を確認してください(%w)", err)
+	return fmt.Errorf(T("サーバーに接続できませんでした。ネットワーク接続を確認してください(%w)"), err)
 }

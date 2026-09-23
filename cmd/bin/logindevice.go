@@ -26,13 +26,13 @@ import (
 func loginViaDeviceCode(cfg Config) (*Session, error) {
 	created, err := createDeviceCode(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("デバイスコードの発行に失敗しました: %w", err)
+		return nil, fmt.Errorf(T("デバイスコードの発行に失敗しました: %w"), err)
 	}
 
-	fmt.Printf("%s 以下のURLを(別の端末でもかまいません)ブラウザで開き、コードを確認して承認してください:\n", cyan("→"))
+	fmt.Printf(T("%s 以下のURLを(別の端末でもかまいません)ブラウザで開き、コードを確認して承認してください:\n"), cyan("→"))
 	fmt.Printf("  %s\n", created.VerificationURIComplete)
-	fmt.Printf("  %s\n", dim(fmt.Sprintf("コード: %s", created.UserCode)))
-	fmt.Printf("  %s\n", dim(fmt.Sprintf("(このコードは%d分で期限切れになります)", created.ExpiresIn/60)))
+	fmt.Printf("  %s\n", dim(fmt.Sprintf(T("コード: %s"), created.UserCode)))
+	fmt.Printf("  %s\n", dim(fmt.Sprintf(T("(このコードは%d分で期限切れになります)"), created.ExpiresIn/60)))
 
 	interval := time.Duration(created.Interval) * time.Second
 	if interval <= 0 {
@@ -42,26 +42,26 @@ func loginViaDeviceCode(cfg Config) (*Session, error) {
 
 	for {
 		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("タイムアウトしました(コードの有効期限内に承認が完了しませんでした。もう一度 `bin login --device` からやり直してください)")
+			return nil, fmt.Errorf(T("タイムアウトしました(コードの有効期限内に承認が完了しませんでした。もう一度 `bin login --device` からやり直してください)"))
 		}
 		time.Sleep(interval)
 
 		res, err := pollDeviceCode(cfg, created.DeviceCode)
 		if err != nil {
-			return nil, fmt.Errorf("ログイン状態の確認に失敗しました: %w", err)
+			return nil, fmt.Errorf(T("ログイン状態の確認に失敗しました: %w"), err)
 		}
 		switch res.Status {
 		case "pending":
 			continue
 		case "denied":
-			return nil, fmt.Errorf("ログイン要求が拒否されました")
+			return nil, fmt.Errorf(T("ログイン要求が拒否されました"))
 		case "expired", "invalid":
-			return nil, fmt.Errorf("コードが無効化されました。もう一度 `bin login --device` からやり直してください")
+			return nil, fmt.Errorf(T("コードが無効化されました。もう一度 `bin login --device` からやり直してください"))
 		case "already_used":
-			return nil, fmt.Errorf("このコードは既に使用済みです")
+			return nil, fmt.Errorf(T("このコードは既に使用済みです"))
 		case "authorized":
 			if res.AccessToken == "" || res.RefreshToken == "" {
-				return nil, fmt.Errorf("ログインに失敗しました(トークンを受信できませんでした)")
+				return nil, fmt.Errorf(T("ログインに失敗しました(トークンを受信できませんでした)"))
 			}
 			email := fetchEmail(cfg, res.AccessToken)
 			session := Session{AccessToken: res.AccessToken, RefreshToken: res.RefreshToken, Email: email}
@@ -70,7 +70,7 @@ func loginViaDeviceCode(cfg Config) (*Session, error) {
 			}
 			return &session, nil
 		default:
-			return nil, fmt.Errorf("予期しない状態です: %s", res.Status)
+			return nil, fmt.Errorf(T("予期しない状態です: %s"), res.Status)
 		}
 	}
 }
@@ -92,7 +92,7 @@ func createDeviceCode(cfg Config) (*deviceCreateResult, error) {
 	}
 	var out deviceCreateResult
 	if err := json.Unmarshal(respBody, &out); err != nil || out.DeviceCode == "" {
-		return nil, fmt.Errorf("レスポンスの解析に失敗しました: %s", string(respBody))
+		return nil, fmt.Errorf(T("レスポンスの解析に失敗しました: %s"), string(respBody))
 	}
 	return &out, nil
 }
@@ -111,7 +111,7 @@ func pollDeviceCode(cfg Config, deviceCode string) (*devicePollResult, error) {
 	}
 	var out devicePollResult
 	if err := json.Unmarshal(respBody, &out); err != nil || out.Status == "" {
-		return nil, fmt.Errorf("レスポンスの解析に失敗しました: %s", string(respBody))
+		return nil, fmt.Errorf(T("レスポンスの解析に失敗しました: %s"), string(respBody))
 	}
 	return &out, nil
 }

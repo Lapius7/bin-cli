@@ -23,18 +23,18 @@ var ignoredDirs = map[string]bool{
 
 func validateGistPath(p string) error {
 	if p == "" || len(p) > 255 {
-		return fmt.Errorf("ファイル名は1〜255文字にしてください: %q", p)
+		return fmt.Errorf(T("ファイル名は1〜255文字にしてください: %q"), p)
 	}
 	if strings.Contains(p, `\`) || strings.HasPrefix(p, "/") || strings.HasSuffix(p, "/") {
-		return fmt.Errorf("ファイル名が不正です: %q", p)
+		return fmt.Errorf(T("ファイル名が不正です: %q"), p)
 	}
 	segs := strings.Split(p, "/")
 	if len(segs) > 10 {
-		return fmt.Errorf("フォルダは10階層までです: %q", p)
+		return fmt.Errorf(T("フォルダは10階層までです: %q"), p)
 	}
 	for _, s := range segs {
 		if s == "" || s == "." || s == ".." {
-			return fmt.Errorf("ファイル名が不正です(空のフォルダ名・.・..は使えません): %q", p)
+			return fmt.Errorf(T("ファイル名が不正です(空のフォルダ名・.・..は使えません): %q"), p)
 		}
 	}
 	return nil
@@ -56,14 +56,14 @@ type skipped struct{ path, reason string }
 func readLocalFile(localPath, gistPath string, out *[]GistFile, skips *[]skipped) {
 	data, err := os.ReadFile(localPath)
 	if err != nil {
-		fail(fmt.Errorf("ファイルを読み込めません: %w", err))
+		fail(fmt.Errorf(T("ファイルを読み込めません: %w"), err))
 	}
 	if len(data) > maxFileBytes {
-		*skips = append(*skips, skipped{gistPath, "1MB超"})
+		*skips = append(*skips, skipped{gistPath, T("1MB超")})
 		return
 	}
 	if !utf8.Valid(data) || strings.ContainsRune(string(data), 0) {
-		*skips = append(*skips, skipped{gistPath, "バイナリ"})
+		*skips = append(*skips, skipped{gistPath, T("バイナリ")})
 		return
 	}
 	*out = append(*out, GistFile{Filename: gistPath, Content: string(data)})
@@ -75,7 +75,7 @@ func readLocalFile(localPath, gistPath string, out *[]GistFile, skips *[]skipped
 func collectPath(local string, out *[]GistFile, skips *[]skipped) {
 	info, err := os.Stat(local)
 	if err != nil {
-		fail(fmt.Errorf("ファイルを読み込めません: %w", err))
+		fail(fmt.Errorf(T("ファイルを読み込めません: %w"), err))
 	}
 	if !info.IsDir() {
 		readLocalFile(local, gistPathFor(local), out, skips)
@@ -125,7 +125,7 @@ func readInputFiles(paths []string, stdinName string, allowEmpty, implicitStdin 
 	if len(paths) == 0 && implicitStdin && stdinIsPiped() {
 		f := readStdinFile(stdinName)
 		if f.Content == "" && !allowEmpty {
-			fail(fmt.Errorf("標準入力が空です。ファイルを指定するか、内容をパイプで渡してください"))
+			fail(fmt.Errorf(T("標準入力が空です。ファイルを指定するか、内容をパイプで渡してください")))
 		}
 		if f.Content != "" {
 			files = append(files, f)
@@ -134,10 +134,10 @@ func readInputFiles(paths []string, stdinName string, allowEmpty, implicitStdin 
 	if len(skips) > 0 {
 		for i, s := range skips {
 			if i == 5 {
-				warnErr("  …他%d件", len(skips)-5)
+				warnErr(T("  …他%d件"), len(skips)-5)
 				break
 			}
-			warnErr("%s を除外しました(%s)", s.path, s.reason)
+			warnErr(T("%s を除外しました(%s)"), s.path, s.reason)
 		}
 	}
 	for _, f := range files {
@@ -146,10 +146,10 @@ func readInputFiles(paths []string, stdinName string, allowEmpty, implicitStdin 
 		}
 	}
 	if len(files) > 300 {
-		fail(fmt.Errorf("ファイルは1つのGistにつき300個までです(%d個あります)", len(files)))
+		fail(fmt.Errorf(T("ファイルは1つのGistにつき300個までです(%d個あります)"), len(files)))
 	}
 	if len(files) == 0 && !allowEmpty {
-		fail(fmt.Errorf("ファイルを指定するか、標準入力から渡してください(例: cat main.go | bin create -f main.go)"))
+		fail(fmt.Errorf(T("ファイルを指定するか、標準入力から渡してください(例: cat main.go | bin create -f main.go)")))
 	}
 	return files
 }
@@ -163,7 +163,7 @@ func safeJoin(dir, gistPath string) (string, error) {
 	p := filepath.Join(dir, filepath.FromSlash(gistPath))
 	rel, err := filepath.Rel(dir, p)
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		return "", fmt.Errorf("保存先ディレクトリの外には書き込めません: %s", gistPath)
+		return "", fmt.Errorf(T("保存先ディレクトリの外には書き込めません: %s"), gistPath)
 	}
 	return p, nil
 }

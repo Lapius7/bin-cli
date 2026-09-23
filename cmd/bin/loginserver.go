@@ -23,10 +23,10 @@ const (
 // (#access_token=...)で返すが、fragmentはサーバーに送られてこないため、
 // このページのJSでlocation.hashを読み取り、ローカルサーバーにPOSTし直す。
 const callbackHTML = `<!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><title>bin ログイン</title>
+<html lang="{{LANG}}"><head><meta charset="utf-8"><title>{{TITLE}}</title>
 <style>body{font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0f172a;color:#e2e8f0}
 .box{text-align:center}h1{font-size:1.25rem}</style></head>
-<body><div class="box"><h1 id="msg">処理中...</h1></div>
+<body><div class="box"><h1 id="msg">{{PROCESSING}}</h1></div>
 <script>
 (function () {
   var params = new URLSearchParams(location.hash.replace(/^#/, ""));
@@ -34,7 +34,7 @@ const callbackHTML = `<!doctype html>
   var refreshToken = params.get("refresh_token");
   var msg = document.getElementById("msg");
   if (!accessToken || !refreshToken) {
-    msg.textContent = "ログインに失敗しました。このタブを閉じてCLIを確認してください。";
+    msg.textContent = "{{FAILED}}";
     fetch("/callback/complete", {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ error: "no_token" }),
@@ -45,9 +45,9 @@ const callbackHTML = `<!doctype html>
     method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken }),
   }).then(function () {
-    msg.textContent = "ログインが完了しました。このタブを閉じてください。";
+    msg.textContent = "{{DONE}}";
   }).catch(function () {
-    msg.textContent = "CLIへの通知に失敗しました。ターミナルを確認してください。";
+    msg.textContent = "{{NOTIFY_FAILED}}";
   });
 })();
 </script></body></html>`
@@ -67,7 +67,7 @@ func loginViaBrowser(cfg Config) (*Session, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write([]byte(callbackHTML))
+		_, _ = w.Write([]byte(callbackPage()))
 	})
 	mux.HandleFunc("/callback/complete", func(w http.ResponseWriter, r *http.Request) {
 		var res callbackResult
@@ -84,7 +84,7 @@ func loginViaBrowser(cfg Config) (*Session, error) {
 	// されているため)ので、毎回ランダムなポートを使うことでそれを防ぐ。
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		return nil, fmt.Errorf("ローカルサーバーの起動に失敗しました: %w", err)
+		return nil, fmt.Errorf(T("ローカルサーバーの起動に失敗しました: %w"), err)
 	}
 	callbackPort := listener.Addr().(*net.TCPAddr).Port
 	srv := &http.Server{Handler: mux}
@@ -102,18 +102,18 @@ func loginViaBrowser(cfg Config) (*Session, error) {
 	// このmint呼び出しもbin-server(/api)経由にすることで、CLIはANON_KEYを一切持たずに済む。
 	token, err := mintConnectToken(cfg, redirectTo)
 	if err != nil {
-		return nil, fmt.Errorf("ログインURLの発行に失敗しました: %w", err)
+		return nil, fmt.Errorf(T("ログインURLの発行に失敗しました: %w"), err)
 	}
 	authURL := strings.TrimRight(accountURL, "/") + "/oauth/v2/authorize?token=" + url.QueryEscape(token)
 
-	fmt.Printf("%s 以下のURLをクリック(または手動でコピーしてブラウザに貼り付け)して開いてください:\n", cyan("→"))
+	fmt.Printf(T("%s 以下のURLをクリック(または手動でコピーしてブラウザに貼り付け)して開いてください:\n"), cyan("→"))
 	fmt.Printf("  %s\n", authURL)
-	fmt.Printf("  %s\n", dim(fmt.Sprintf("(このリンクは%d分で期限切れになります)", int(loginTimeout.Minutes()))))
+	fmt.Printf("  %s\n", dim(fmt.Sprintf(T("(このリンクは%d分で期限切れになります)"), int(loginTimeout.Minutes()))))
 
 	select {
 	case res := <-resultCh:
 		if res.Error != "" || res.AccessToken == "" || res.RefreshToken == "" {
-			return nil, fmt.Errorf("ログインに失敗しました(トークンを受信できませんでした)")
+			return nil, fmt.Errorf(T("ログインに失敗しました(トークンを受信できませんでした)"))
 		}
 		email := fetchEmail(cfg, res.AccessToken)
 		session := Session{AccessToken: res.AccessToken, RefreshToken: res.RefreshToken, Email: email}
@@ -122,7 +122,7 @@ func loginViaBrowser(cfg Config) (*Session, error) {
 		}
 		return &session, nil
 	case <-time.After(loginTimeout):
-		return nil, fmt.Errorf("タイムアウトしました(%s以内にブラウザでのログインが完了しませんでした。ログインURLの有効期限が切れています。もう一度 `bin login` からやり直してください)", loginTimeout)
+		return nil, fmt.Errorf(T("タイムアウトしました(%s以内にブラウザでのログインが完了しませんでした。ログインURLの有効期限が切れています。もう一度 `bin login` からやり直してください)"), loginTimeout)
 	}
 }
 
@@ -156,7 +156,20 @@ func mintConnectToken(cfg Config, redirectTo string) (string, error) {
 		Token string `json:"token"`
 	}
 	if err := json.Unmarshal(respBody, &out); err != nil || out.Token == "" {
-		return "", fmt.Errorf("レスポンスの解析に失敗しました: %s", string(respBody))
+		return "", fmt.Errorf(T("レスポンスの解析に失敗しました: %s"), string(respBody))
 	}
 	return out.Token, nil
+}
+
+// callbackPage はcallbackHTMLのプレースホルダーを現在の言語の文言で埋める
+// (訳文はJSの文字列リテラルに入るので、"と\を含めないこと)
+func callbackPage() string {
+	return strings.NewReplacer(
+		"{{LANG}}", lang,
+		"{{TITLE}}", T("bin ログイン"),
+		"{{PROCESSING}}", T("処理中..."),
+		"{{FAILED}}", T("ログインに失敗しました。このタブを閉じてCLIを確認してください。"),
+		"{{DONE}}", T("ログインが完了しました。このタブを閉じてください。"),
+		"{{NOTIFY_FAILED}}", T("CLIへの通知に失敗しました。ターミナルを確認してください。"),
+	).Replace(callbackHTML)
 }

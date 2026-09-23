@@ -57,10 +57,10 @@ func parseGistID(s string) (string, error) {
 				return p, nil
 			}
 		}
-		return "", fmt.Errorf("URLからGistのIDを読み取れません: %s", s)
+		return "", fmt.Errorf(T("URLからGistのIDを読み取れません: %s"), s)
 	}
 	if !gistIDPattern.MatchString(s) {
-		return "", fmt.Errorf("GistのIDは16桁の英数字です: %s", s)
+		return "", fmt.Errorf(T("GistのIDは16桁の英数字です: %s"), s)
 	}
 	return s, nil
 }
@@ -77,16 +77,16 @@ func rpc(cfg Config, session *Session, fn string, args map[string]any) ([]byte, 
 func describeDBError(err error) error {
 	msg := err.Error()
 	table := []struct{ code, text string }{
-		{"not_authenticated", "ログインが必要です。`bin login` を実行してください"},
-		{"not_found", "Gistが見つかりません(存在しないか、自分のGistではありません)"},
-		{"files_required", "ファイルを1つ以上指定してください"},
-		{"too_many_files", "ファイルは1つのGistにつき300個までです"},
-		{"invalid_filename", "ファイル名が不正です(1〜255文字・10階層まで。空のフォルダ名・.・..・\\ は使えません)"},
-		{"path_conflict", "同じ名前のファイルとフォルダは同時に置けません(例: a と a/b)"},
-		{"duplicate_filename", "同じファイル名が重複しています"},
-		{"file_too_large", "1ファイルあたり1MBまでです"},
-		{"gist_too_large", "1つのGistにつき合計5MBまでです"},
-		{"gist_limit_exceeded", "作成できるGistの上限に達しました"},
+		{"not_authenticated", T("ログインが必要です。`bin login` を実行してください")},
+		{"not_found", T("Gistが見つかりません(存在しないか、自分のGistではありません)")},
+		{"files_required", T("ファイルを1つ以上指定してください")},
+		{"too_many_files", T("ファイルは1つのGistにつき300個までです")},
+		{"invalid_filename", T("ファイル名が不正です(1〜255文字・10階層まで。空のフォルダ名・.・..・\\ は使えません)")},
+		{"path_conflict", T("同じ名前のファイルとフォルダは同時に置けません(例: a と a/b)")},
+		{"duplicate_filename", T("同じファイル名が重複しています")},
+		{"file_too_large", T("1ファイルあたり1MBまでです")},
+		{"gist_too_large", T("1つのGistにつき合計5MBまでです")},
+		{"gist_limit_exceeded", T("作成できるGistの上限に達しました")},
 	}
 	for _, t := range table {
 		if strings.Contains(msg, t.code) {
@@ -103,10 +103,10 @@ func getGist(cfg Config, session *Session, id string) (*Gist, error) {
 	}
 	var g *Gist
 	if err := json.Unmarshal(body, &g); err != nil {
-		return nil, fmt.Errorf("レスポンスの解析に失敗しました: %w", err)
+		return nil, fmt.Errorf(T("レスポンスの解析に失敗しました: %w"), err)
 	}
 	if g == nil {
-		return nil, fmt.Errorf("Gistが見つかりません(存在しないか、非公開です)")
+		return nil, fmt.Errorf(T("Gistが見つかりません(存在しないか、非公開です)"))
 	}
 	return g, nil
 }
@@ -146,7 +146,7 @@ func listGists(cfg Config, session *Session, f listFilter, limit, offset int) ([
 		Items []GistSummary `json:"items"`
 	}
 	if err := json.Unmarshal(body, &out); err != nil {
-		return nil, 0, fmt.Errorf("レスポンスの解析に失敗しました: %w", err)
+		return nil, 0, fmt.Errorf(T("レスポンスの解析に失敗しました: %w"), err)
 	}
 	return out.Items, out.Total, nil
 }
@@ -165,7 +165,7 @@ func saveGist(cfg Config, session *Session, id *string, title, description, visi
 	}
 	var newID string
 	if err := json.Unmarshal(body, &newID); err != nil || newID == "" {
-		return "", fmt.Errorf("レスポンスの解析に失敗しました: %s", string(body))
+		return "", fmt.Errorf(T("レスポンスの解析に失敗しました: %s"), string(body))
 	}
 	return newID, nil
 }
@@ -184,17 +184,17 @@ func gistTitle(title string, files []string) string {
 	if len(files) > 0 {
 		return files[0]
 	}
-	return "(無題)"
+	return T("(無題)")
 }
 
 func visibilityLabel(v string) string {
 	switch v {
 	case "public":
-		return green("公開")
+		return green(T("公開"))
 	case "unlisted":
-		return yellow("限定公開")
+		return yellow(T("限定公開"))
 	case "private":
-		return red("非公開")
+		return red(T("非公開"))
 	}
 	return v
 }

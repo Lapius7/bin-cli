@@ -26,7 +26,7 @@ func metaChanges(prev, next *Revision) []string {
 	}
 	empty := func(s string) string {
 		if s == "" {
-			return "(なし)"
+			return T("(なし)")
 		}
 		return s
 	}
@@ -36,10 +36,10 @@ func metaChanges(prev, next *Revision) []string {
 			out = append(out, fmt.Sprintf("%s: %s → %s", label, format(*a), format(*b)))
 		}
 	}
-	cmp("タイトル", prev.Title, next.Title, empty)
-	cmp("説明", prev.Description, next.Description, empty)
-	cmp("公開範囲", prev.Visibility, next.Visibility, func(v string) string {
-		return map[string]string{"public": "公開", "unlisted": "限定公開", "private": "非公開"}[v]
+	cmp(T("タイトル"), prev.Title, next.Title, empty)
+	cmp(T("説明"), prev.Description, next.Description, empty)
+	cmp(T("公開範囲"), prev.Visibility, next.Visibility, func(v string) string {
+		return map[string]string{"public": T("公開"), "unlisted": T("限定公開"), "private": T("非公開")}[v]
 	})
 	return out
 }
@@ -51,7 +51,7 @@ func getRevisions(cfg Config, session *Session, id string) ([]Revision, error) {
 	}
 	var revs []Revision
 	if err := json.Unmarshal(body, &revs); err != nil {
-		return nil, fmt.Errorf("レスポンスの解析に失敗しました: %w", err)
+		return nil, fmt.Errorf(T("レスポンスの解析に失敗しました: %w"), err)
 	}
 	return revs, nil
 }
@@ -192,15 +192,15 @@ func changesBetween(prev, next []GistFile) []fileChange {
 		if existed && old == f.Content {
 			continue
 		}
-		status := "変更"
+		status := T("変更")
 		if !existed {
-			status = "追加"
+			status = T("追加")
 		}
 		out = append(out, makeChange(f.Filename, status, old, f.Content))
 	}
 	for _, f := range prev {
 		if !after[f.Filename] {
-			out = append(out, makeChange(f.Filename, "削除", f.Content, ""))
+			out = append(out, makeChange(f.Filename, T("削除"), f.Content, ""))
 		}
 	}
 	return out
@@ -235,7 +235,7 @@ func cmdLog(args []string) {
 		fail(err)
 	}
 	if len(revs) == 0 {
-		fail(fmt.Errorf("Gistが見つかりません(存在しないか、非公開です)"))
+		fail(fmt.Errorf(T("Gistが見つかりません(存在しないか、非公開です)")))
 	}
 
 	byNumber := map[int]*Revision{}
@@ -260,11 +260,11 @@ func cmdLog(args []string) {
 
 		t, _ := time.Parse(time.RFC3339Nano, r.CreatedAt)
 		t = t.Local()
-		if day := t.Format("2006年1月2日"); day != lastDay {
+		if day := t.Format(T("2006年1月2日")); day != lastDay {
 			if lastDay != "" {
 				fmt.Println()
 			}
-			fmt.Println(dim("── " + day + "のコミット"))
+			fmt.Println(dim(fmt.Sprintf(T("── %sのコミット"), day)))
 			lastDay = day
 		}
 
@@ -273,9 +273,9 @@ func cmdLog(args []string) {
 			// 復元コミット: 「↺ <復元元ハッシュ>「復元元のメモ」の時点に復元」
 			src := ""
 			if s, ok := byNumber[*r.RestoredFrom]; ok && s.Message != "" {
-				src = "「" + s.Message + "」"
+				src = fmt.Sprintf(T("「%s」"), s.Message)
 			}
-			restore := cyan("↺ "+revisionHash(id, *r.RestoredFrom)) + src + "の時点に復元"
+			restore := fmt.Sprintf(T("%s%sの時点に復元"), cyan("↺ "+revisionHash(id, *r.RestoredFrom)), src)
 			if msg != "" {
 				msg = restore + " " + msg
 			} else {
@@ -285,19 +285,19 @@ func cmdLog(args []string) {
 		if msg == "" {
 			switch {
 			case i == len(revs)-1:
-				msg = "Gistを作成"
+				msg = T("Gistを作成")
 			case len(changes) == 0 && len(meta) > 0:
-				msg = "タイトル等を変更"
+				msg = T("タイトル等を変更")
 			case len(changes) == 1:
-				msg = changes[0].name + " を" + changes[0].status
+				msg = fmt.Sprintf(T("%s を%s"), changes[0].name, changes[0].status)
 			default:
-				msg = fmt.Sprintf("%dファイルを変更", len(changes))
+				msg = fmt.Sprintf(T("%dファイルを変更"), len(changes))
 			}
 			msg = dim(msg)
 		}
 		latest := ""
 		if i == 0 {
-			latest = " " + cyan("(最新)")
+			latest = " " + cyan(T("(最新)"))
 		}
 		fmt.Printf("%s %s %s%s  %s %s  %s\n", yellow("●"), yellow(revisionHash(id, r.Revision)), msg, latest,
 			green(fmt.Sprintf("+%d", add)), red(fmt.Sprintf("-%d", del)), dim(t.Format("15:04")))

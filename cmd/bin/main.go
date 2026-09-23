@@ -62,40 +62,40 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Printf("%s %s\n\n", bold("bin"), dim("bin.lapius7.com CLIクライアント "+version))
+	fmt.Printf("%s %s\n\n", bold("bin"), dim(T("bin.lapius7.com CLIクライアント ")+version))
 
-	printUsageSection("認証", [][2]string{
-		{"bin login", "ブラウザでLapount(account.lapius7.com)にログインする"},
-		{"bin login --device", "デバイスコード方式でログインする(SSH越し等、手元でブラウザが開けない場合)"},
-		{"bin logout", "ログアウトする(このCLIのセッションをサーバー側でも失効させる)"},
-		{"bin whoami", "自分のアカウント情報(連携・2段階認証・Gistの集計など)を表示する"},
-		{"bin user -u <handle>", "ユーザーの公開プロフィールと公開Gistの集計を表示する"},
+	printUsageSection(T("認証"), [][2]string{
+		{"bin login", T("ブラウザでLapount(account.lapius7.com)にログインする")},
+		{"bin login --device", T("デバイスコード方式でログインする(SSH越し等、手元でブラウザが開けない場合)")},
+		{"bin logout", T("ログアウトする(このCLIのセッションをサーバー側でも失効させる)")},
+		{"bin whoami", T("自分のアカウント情報(連携・2段階認証・Gistの集計など)を表示する")},
+		{"bin user -u <handle>", T("ユーザーの公開プロフィールと公開Gistの集計を表示する")},
 	})
 	printUsageSection("Gist", [][2]string{
-		{"bin create <file|dir>...", "ファイル・フォルダからGistを作成する(標準入力からも可: cat x | bin create -f x.txt)"},
-		{"bin list [-u <handle>]", "自分(または指定ユーザー)のGist一覧"},
-		{"bin timeline", "みんなの公開Gistを新しい順に表示する"},
-		{"bin view <id> [-f <file>]", "内容を表示する(-fで1ファイルだけ生出力)"},
-		{"bin edit <id> [<file|dir>...]", "ファイルを追加・上書きする(--remove <path>で削除)"},
-		{"bin clone <id> [<dir>]", "Gistのファイルをフォルダ構成ごとダウンロードする"},
-		{"bin log <id> [-p]", "変更履歴を git log 風に表示する(-pで差分も表示)"},
-		{"bin delete <id>", "削除する(確認あり、-yで省略)"},
+		{"bin create <file|dir>...", T("ファイル・フォルダからGistを作成する(標準入力からも可: cat x | bin create -f x.txt)")},
+		{"bin list [-u <handle>]", T("自分(または指定ユーザー)のGist一覧")},
+		{"bin timeline", T("みんなの公開Gistを新しい順に表示する")},
+		{"bin view <id> [-f <file>]", T("内容を表示する(-fで1ファイルだけ生出力)")},
+		{"bin edit <id> [<file|dir>...]", T("ファイルを追加・上書きする(--remove <path>で削除)")},
+		{"bin clone <id> [<dir>]", T("Gistのファイルをフォルダ構成ごとダウンロードする")},
+		{"bin log <id> [-p]", T("変更履歴を git log 風に表示する(-pで差分も表示)")},
+		{"bin delete <id>", T("削除する(確認あり、-yで省略)")},
 	})
-	printUsageSection("絞り込み(list/timeline)", [][2]string{
-		{"-q, --query <text>", "タイトル・説明・ファイルパスで検索"},
-		{"-l, --lang <言語>", "言語で絞り込み(python,go のようにカンマ区切り、拡張子でも可)"},
-		{"--since <期間>", "24h・7d・2w・3m・1y、または 2026-09-01 以降"},
-		{"--sort <順>", "updated(既定) / created / oldest"},
-		{"-n, --limit <N>", "表示件数(既定30)"},
+	printUsageSection(T("絞り込み(list/timeline)"), [][2]string{
+		{"-q, --query <text>", T("タイトル・説明・ファイルパスで検索")},
+		{T("-l, --lang <言語>"), T("言語で絞り込み(python,go のようにカンマ区切り、拡張子でも可)")},
+		{T("--since <期間>"), T("24h・7d・2w・3m・1y、または 2026-09-01 以降")},
+		{T("--sort <順>"), T("updated(既定) / created / oldest")},
+		{"-n, --limit <N>", T("表示件数(既定30)")},
 	})
-	printUsageSection("オプション(create/edit)", [][2]string{
-		{"-t, --title <text>", "タイトル"},
-		{"-d, --description <text>", "説明"},
-		{"-f, --filename <name>", "標準入力から読み込む時のファイル名"},
-		{"-m, --message <text>", "変更履歴に残すメモ(コミットメッセージ)"},
-		{"--public / --unlisted / --private", "公開範囲(作成時の既定は --unlisted)"},
+	printUsageSection(T("オプション(create/edit)"), [][2]string{
+		{"-t, --title <text>", T("タイトル")},
+		{"-d, --description <text>", T("説明")},
+		{"-f, --filename <name>", T("標準入力から読み込む時のファイル名")},
+		{"-m, --message <text>", T("変更履歴に残すメモ(コミットメッセージ)")},
+		{"--public / --unlisted / --private", T("公開範囲(作成時の既定は --unlisted)")},
 	})
-	fmt.Println(dim("<id> にはGistのURL(https://bin.lapius7.com/<id>)もそのまま指定できます。"))
+	fmt.Println(dim(T("<id> にはGistのURL(https://bin.lapius7.com/<id>)もそのまま指定できます。")))
 }
 
 func printUsageSection(title string, rows [][2]string) {
@@ -134,7 +134,7 @@ func parseArgs(args []string, valueFlags map[string]string, boolFlags map[string
 				p.values[key] = append(p.values[key], args[i+1])
 				i++
 			} else {
-				fail(fmt.Errorf("%s には値が必要です", name))
+				fail(fmt.Errorf(T("%s には値が必要です"), name))
 			}
 			continue
 		}
@@ -143,7 +143,7 @@ func parseArgs(args []string, valueFlags map[string]string, boolFlags map[string
 			continue
 		}
 		if strings.HasPrefix(a, "-") && a != "-" {
-			fail(fmt.Errorf("不明なオプションです: %s(`bin help` で使い方を表示)", a))
+			fail(fmt.Errorf(T("不明なオプションです: %s(`bin help` で使い方を表示)"), a))
 		}
 		p.positional = append(p.positional, a)
 	}
@@ -175,7 +175,7 @@ func pickVisibility(p parsedArgs) (string, bool) {
 	for _, v := range []string{"public", "unlisted", "private"} {
 		if p.bools[v] {
 			if found != "" {
-				fail(fmt.Errorf("公開範囲の指定は1つだけにしてください"))
+				fail(fmt.Errorf(T("公開範囲の指定は1つだけにしてください")))
 			}
 			found = v
 		}
@@ -189,7 +189,7 @@ func requireSession() (Config, *Session) {
 	cfg := loadConfig()
 	session, err := loadSession()
 	if err != nil {
-		fail(fmt.Errorf("ログインしていません。先に `bin login` を実行してください"))
+		fail(fmt.Errorf(T("ログインしていません。先に `bin login` を実行してください")))
 	}
 	return cfg, session
 }
@@ -234,13 +234,13 @@ func stdoutIsTerminal() bool {
 func readStdinFile(name string) GistFile {
 	data, err := io.ReadAll(io.LimitReader(os.Stdin, 1024*1024+1))
 	if err != nil {
-		fail(fmt.Errorf("標準入力を読み込めません: %w", err))
+		fail(fmt.Errorf(T("標準入力を読み込めません: %w"), err))
 	}
 	if len(data) > 1024*1024 {
-		fail(fmt.Errorf("1ファイルあたり1MBまでです"))
+		fail(fmt.Errorf(T("1ファイルあたり1MBまでです")))
 	}
 	if !utf8.Valid(data) {
-		fail(fmt.Errorf("標準入力の内容がテキスト(UTF-8)ではありません"))
+		fail(fmt.Errorf(T("標準入力の内容がテキスト(UTF-8)ではありません")))
 	}
 	if name == "" {
 		name = "stdin.txt"
@@ -279,7 +279,7 @@ func cmdLogin(args []string) {
 	if err != nil {
 		fail(err)
 	}
-	success("ログインしました")
+	success(T("ログインしました"))
 	cmdWhoami()
 }
 
@@ -303,7 +303,7 @@ func cmdCreate(args []string) {
 		fail(err)
 	}
 	// URLだけを標準出力に出す(`url=$(bin create x.go)` のように使えるように)。装飾はstderrへ
-	fmt.Fprintf(os.Stderr, "%s 作成しました(%s・%dファイル)\n", green("✓"), visibilityLabel(visibility), len(files))
+	fmt.Fprintf(os.Stderr, Tn("%s 作成しました(%s・%dファイル)\n", len(files)), green("✓"), visibilityLabel(visibility), len(files))
 	fmt.Println(gistURL(cfg, id))
 }
 
@@ -321,10 +321,10 @@ func cmdList(args []string) {
 		if err != nil {
 			fail(err)
 		}
-		f.Owner, label = id, "@"+handle+" のGist"
+		f.Owner, label = id, fmt.Sprintf(T("@%s のGist"), handle)
 	} else {
 		cfg, session = requireSession()
-		f.Owner, label = userIDFromToken(session.AccessToken), "自分のGist"
+		f.Owner, label = userIDFromToken(session.AccessToken), T("自分のGist")
 	}
 
 	items, total, err := listGists(cfg, session, f, limit, 0)
@@ -332,7 +332,7 @@ func cmdList(args []string) {
 		fail(err)
 	}
 	if len(items) == 0 && len(notes) == 0 {
-		fmt.Println(dim("Gistがありません。") + cyan(" `bin create <file>`") + dim(" で作成できます。"))
+		fmt.Println(dim(fmt.Sprintf(T("Gistがありません。%s で作成できます。"), cyan("`bin create <file>`"))))
 		return
 	}
 	printGistTable(label, notes, items, total, false)
@@ -348,7 +348,7 @@ func resolveHandle(cfg Config, handle string) (string, error) {
 	}
 	_ = json.Unmarshal(body, &rows)
 	if len(rows) == 0 {
-		return "", fmt.Errorf("@%s というユーザーは見つかりません", handle)
+		return "", fmt.Errorf(T("@%s というユーザーは見つかりません"), handle)
 	}
 	return rows[0].UserID, nil
 }
@@ -381,7 +381,7 @@ func cmdView(args []string) {
 				return
 			}
 		}
-		fail(fmt.Errorf("%s というファイルはありません", name))
+		fail(fmt.Errorf(T("%s というファイルはありません"), name))
 	}
 	if p.bools["raw"] || (!stdoutIsTerminal() && len(g.Files) == 1) {
 		for _, f := range g.Files {
@@ -402,7 +402,7 @@ func cmdView(args []string) {
 	if g.Description != "" {
 		fmt.Println(g.Description)
 	}
-	fmt.Println(dim(fmt.Sprintf("%s · 更新 %s · リビジョン %d", gistURL(cfg, g.ID), formatDate(g.UpdatedAt), g.RevisionCount)))
+	fmt.Println(dim(fmt.Sprintf(T("%s · 更新 %s · リビジョン %d"), gistURL(cfg, g.ID), formatDate(g.UpdatedAt), g.RevisionCount)))
 	for _, f := range g.Files {
 		fmt.Printf("\n%s %s\n", cyan("──"), bold(f.Filename))
 		fmt.Print(f.Content)
@@ -427,7 +427,7 @@ func cmdEdit(args []string) {
 		fail(err)
 	}
 	if g.Owner.ID != userIDFromToken(session.AccessToken) {
-		fail(fmt.Errorf("自分のGistではないため編集できません"))
+		fail(fmt.Errorf(T("自分のGistではないため編集できません")))
 	}
 
 	stdinName, _ := p.value("filename")
@@ -465,7 +465,7 @@ func cmdEdit(args []string) {
 			kept = append(kept, f)
 		}
 		if !found {
-			fail(fmt.Errorf("%s というファイル・フォルダはありません", name))
+			fail(fmt.Errorf(T("%s というファイル・フォルダはありません"), name))
 		}
 		files = kept
 	}
@@ -481,14 +481,14 @@ func cmdEdit(args []string) {
 		visibility = v
 	}
 	if len(updates) == 0 && len(removes) == 0 && title == g.Title && description == g.Description && visibility == g.Visibility {
-		fail(fmt.Errorf("変更内容がありません(ファイル・--remove・-t・-d・公開範囲のいずれかを指定してください)"))
+		fail(fmt.Errorf(T("変更内容がありません(ファイル・--remove・-t・-d・公開範囲のいずれかを指定してください)")))
 	}
 
 	message, _ := p.value("message")
 	if _, err := saveGist(cfg, session, &g.ID, title, description, visibility, files, message); err != nil {
 		fail(err)
 	}
-	fmt.Fprintf(os.Stderr, "%s 更新しました\n", green("✓"))
+	fmt.Fprintf(os.Stderr, T("%s 更新しました\n"), green("✓"))
 	fmt.Println(gistURL(cfg, g.ID))
 }
 
@@ -510,14 +510,14 @@ func cmdDelete(args []string) {
 	for i, f := range g.Files {
 		names[i] = f.Filename
 	}
-	if !p.bools["yes"] && !confirm("「%s」を削除しますか?変更履歴も含めて元に戻せません。", gistTitle(g.Title, names)) {
-		fmt.Println("キャンセルしました。")
+	if !p.bools["yes"] && !confirm(T("「%s」を削除しますか?変更履歴も含めて元に戻せません。"), gistTitle(g.Title, names)) {
+		fmt.Println(T("キャンセルしました。"))
 		return
 	}
 	if err := deleteGist(cfg, session, id); err != nil {
 		fail(err)
 	}
-	success("削除しました")
+	success(T("削除しました"))
 }
 
 func cmdClone(args []string) {
@@ -544,7 +544,7 @@ func cmdClone(args []string) {
 			fail(err)
 		}
 		if _, err := os.Stat(path); err == nil && !p.bools["force"] {
-			fail(fmt.Errorf("%s は既に存在します(上書きするには --force)", path))
+			fail(fmt.Errorf(T("%s は既に存在します(上書きするには --force)"), path))
 		}
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			fail(err)
@@ -554,5 +554,5 @@ func cmdClone(args []string) {
 		}
 		fmt.Println(dim("  " + path))
 	}
-	success("%dファイルを %s にダウンロードしました", len(g.Files), dir)
+	success(Tn("%dファイルを %s にダウンロードしました", len(g.Files)), len(g.Files), dir)
 }
