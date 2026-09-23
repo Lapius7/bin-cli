@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -47,6 +46,8 @@ func main() {
 		cmdDelete(args)
 	case "clone", "download":
 		cmdClone(args)
+	case "timeline", "tl":
+		cmdTimeline(args)
 	case "log", "history":
 		cmdLog(args)
 	case "version", "--version", "-v":
@@ -72,12 +73,20 @@ func printUsage() {
 	})
 	printUsageSection("Gist", [][2]string{
 		{"bin create <file|dir>...", "ファイル・フォルダからGistを作成する(標準入力からも可: cat x | bin create -f x.txt)"},
-		{"bin list [-u <handle>] [-q <text>]", "自分(または指定ユーザー)のGist一覧・検索"},
+		{"bin list [-u <handle>]", "自分(または指定ユーザー)のGist一覧"},
+		{"bin timeline", "みんなの公開Gistを新しい順に表示する"},
 		{"bin view <id> [-f <file>]", "内容を表示する(-fで1ファイルだけ生出力)"},
 		{"bin edit <id> [<file|dir>...]", "ファイルを追加・上書きする(--remove <path>で削除)"},
 		{"bin clone <id> [<dir>]", "Gistのファイルをフォルダ構成ごとダウンロードする"},
 		{"bin log <id> [-p]", "変更履歴を git log 風に表示する(-pで差分も表示)"},
 		{"bin delete <id>", "削除する(確認あり、-yで省略)"},
+	})
+	printUsageSection("絞り込み(list/timeline)", [][2]string{
+		{"-q, --query <text>", "タイトル・説明・ファイルパスで検索"},
+		{"-l, --lang <言語>", "言語で絞り込み(python,go のようにカンマ区切り、拡張子でも可)"},
+		{"--since <期間>", "24h・7d・2w・3m・1y、または 2026-09-01 以降"},
+		{"--sort <順>", "updated(既定) / created / oldest"},
+		{"-n, --limit <N>", "表示件数(既定30)"},
 	})
 	printUsageSection("オプション(create/edit)", [][2]string{
 		{"-t, --title <text>", "タイトル"},
@@ -299,19 +308,12 @@ func cmdCreate(args []string) {
 }
 
 func cmdList(args []string) {
-	p := parseArgs(args, map[string]string{"-u": "user", "--user": "user", "-n": "limit", "--limit": "limit", "-q": "query", "--query": "query"}, nil)
-	limit := 30
-	if v, ok := p.value("limit"); ok {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1 {
-			fail(fmt.Errorf("--limit には1以上の数を指定してください"))
-		}
-		limit = n
-	}
+	p := parseArgs(args, listValueFlags, nil)
+	f, notes, limit := filterFromArgs(p)
 
 	var cfg Config
 	var session *Session
-	var owner, label string
+	var label string
 	if handle, ok := p.value("user"); ok {
 		cfg, session = optionalSession()
 		handle = strings.TrimPrefix(handle, "@")
@@ -319,37 +321,21 @@ func cmdList(args []string) {
 		if err != nil {
 			fail(err)
 		}
-		owner, label = id, "@"+handle+" のGist"
+		f.Owner, label = id, "@"+handle+" のGist"
 	} else {
 		cfg, session = requireSession()
-		owner, label = userIDFromToken(session.AccessToken), "自分のGist"
+		f.Owner, label = userIDFromToken(session.AccessToken), "自分のGist"
 	}
 
-	query, _ := p.value("query")
-	if query != "" {
-		label += "(「" + query + "」で検索)"
-	}
-	items, total, err := listGists(cfg, session, owner, limit, 0, query)
+	items, total, err := listGists(cfg, session, f, limit, 0)
 	if err != nil {
 		fail(err)
 	}
-	if len(items) == 0 {
+	if len(items) == 0 && len(notes) == 0 {
 		fmt.Println(dim("Gistがありません。") + cyan(" `bin create <file>`") + dim(" で作成できます。"))
 		return
 	}
-	fmt.Println(bold(fmt.Sprintf("%s (%d)", label, total)))
-	w := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
-	for _, g := range items {
-		names := make([]string, len(g.Files))
-		for i, f := range g.Files {
-			names[i] = f.Filename
-		}
-		fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%s\n", cyan(g.ID), bold(gistTitle(g.Title, names)), visibilityLabel(g.Visibility), dim(fmt.Sprintf("%dファイル", len(g.Files))), dim(formatDate(g.UpdatedAt)))
-	}
-	w.Flush()
-	if total > len(items) {
-		fmt.Println(dim(fmt.Sprintf("  ...他%d件(--limit で件数を指定)", total-len(items))))
-	}
+	printGistTable(label, notes, items, total, false)
 }
 
 func resolveHandle(cfg Config, handle string) (string, error) {

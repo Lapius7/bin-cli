@@ -111,12 +111,33 @@ func getGist(cfg Config, session *Session, id string) (*Gist, error) {
 	return g, nil
 }
 
-func listGists(cfg Config, session *Session, owner string, limit, offset int, query string) ([]GistSummary, int, error) {
-	var q any
-	if query != "" {
-		q = query
+// listFilter はlist_gistsの絞り込み条件。空の項目は送らない(DB側の既定値になる)。
+type listFilter struct {
+	Owner string // 空なら全ユーザーの公開Gist(タイムライン)
+	Query string
+	Since string   // RFC3339
+	Exts  []string // 言語(拡張子・拡張子の無いファイル名)
+	Sort  string   // updated / created / oldest
+}
+
+func listGists(cfg Config, session *Session, f listFilter, limit, offset int) ([]GistSummary, int, error) {
+	args := map[string]any{"p_owner": nil, "p_limit": limit, "p_offset": offset, "p_query": nil}
+	if f.Owner != "" {
+		args["p_owner"] = f.Owner
 	}
-	body, err := rpc(cfg, session, "list_gists", map[string]any{"p_owner": owner, "p_limit": limit, "p_offset": offset, "p_query": q})
+	if f.Query != "" {
+		args["p_query"] = f.Query
+	}
+	if f.Since != "" {
+		args["p_since"] = f.Since
+	}
+	if len(f.Exts) > 0 {
+		args["p_extensions"] = f.Exts
+	}
+	if f.Sort != "" && f.Sort != "updated" {
+		args["p_sort"] = f.Sort
+	}
+	body, err := rpc(cfg, session, "list_gists", args)
 	if err != nil {
 		return nil, 0, describeDBError(err)
 	}

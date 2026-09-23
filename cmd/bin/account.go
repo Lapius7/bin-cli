@@ -169,7 +169,7 @@ func collectStats(cfg Config, session *Session, owner string) (*gistStats, error
 	const page, cap = 100, 3000
 	st := &gistStats{}
 	for offset := 0; ; offset += page {
-		items, total, err := listGists(cfg, session, owner, page, offset, "")
+		items, total, err := listGists(cfg, session, listFilter{Owner: owner}, page, offset)
 		if err != nil {
 			return nil, err
 		}
