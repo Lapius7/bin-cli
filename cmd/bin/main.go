@@ -330,7 +330,11 @@ func cmdWhoami() {
 	if name == "" {
 		name = session.Email
 	}
-	fmt.Printf("%s %s\n", bold(name), dim("@"+handle))
+	if handle != "" {
+		fmt.Printf("%s %s\n", bold(name), dim("@"+handle))
+	} else {
+		fmt.Printf("%s %s\n", bold(name), dim("(ハンドル名未設定)"))
+	}
 	if session.Email != "" {
 		fmt.Println(dim(session.Email))
 	}
