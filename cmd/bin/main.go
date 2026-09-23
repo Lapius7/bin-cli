@@ -278,7 +278,7 @@ func cmdCreate(args []string) {
 	p := parseArgs(args, gistValueFlags, visibilityFlags)
 	cfg, session := requireSession()
 	stdinName, _ := p.value("filename")
-	files := readInputFiles(p.positional, stdinName, false)
+	files := readInputFiles(p.positional, stdinName, false, true)
 
 	visibility, ok := pickVisibility(p)
 	if !ok {
@@ -445,7 +445,12 @@ func cmdEdit(args []string) {
 	}
 
 	stdinName, _ := p.value("filename")
-	updates := readInputFiles(p.positional[1:], stdinName, true)
+	// editは「-」か -f を明示した時だけ標準入力を読む
+	paths := p.positional[1:]
+	if stdinName != "" && len(paths) == 0 {
+		paths = []string{"-"}
+	}
+	updates := readInputFiles(paths, stdinName, true, false)
 	removes := p.values["remove"]
 
 	files := g.Files

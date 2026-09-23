@@ -108,8 +108,11 @@ func collectPath(local string, out *[]GistFile, skips *[]skipped) {
 	})
 }
 
-// readInputFiles は位置引数のファイル/ディレクトリと(パイプされていれば)標準入力を読み込む。
-func readInputFiles(paths []string, stdinName string, allowEmpty bool) []GistFile {
+// readInputFiles は位置引数のファイル/ディレクトリと標準入力を読み込む。
+// 標準入力は「-」を指定した時か、implicitStdin=trueで位置引数が無くパイプされている時だけ読む。
+// (editでは暗黙に読まない。スクリプトやSSH経由など標準入力が端末でない環境で
+// `bin edit <id> -t 新タイトル` を実行すると、空の標準入力がstdin.txtとして追加されてしまっていた)
+func readInputFiles(paths []string, stdinName string, allowEmpty, implicitStdin bool) []GistFile {
 	var files []GistFile
 	var skips []skipped
 	for _, p := range paths {
@@ -119,8 +122,14 @@ func readInputFiles(paths []string, stdinName string, allowEmpty bool) []GistFil
 		}
 		collectPath(p, &files, &skips)
 	}
-	if len(paths) == 0 && stdinIsPiped() {
-		files = append(files, readStdinFile(stdinName))
+	if len(paths) == 0 && implicitStdin && stdinIsPiped() {
+		f := readStdinFile(stdinName)
+		if f.Content == "" && !allowEmpty {
+			fail(fmt.Errorf("標準入力が空です。ファイルを指定するか、内容をパイプで渡してください"))
+		}
+		if f.Content != "" {
+			files = append(files, f)
+		}
 	}
 	if len(skips) > 0 {
 		for i, s := range skips {
