@@ -21,6 +21,7 @@ bin list                                    # 自分のGist(-u <handle> で他�
 bin view <id>                               # 表示(-f <file> で1ファイルだけ生出力)
 bin edit <id> main.go --remove old.go -t "新しいタイトル" --public
 bin clone <id> [dir]                        # ファイルをダウンロード
+bin fork <id> -t "派生版"                     # コピーして自分の新しいGistを作る(自分のGistも可、公開範囲は元のまま)
 bin delete <id>                             # 削除(確認あり、-yで省略)
 bin version                                 # バージョン表示。配布中の最新版かどうかも確かめる
 ```

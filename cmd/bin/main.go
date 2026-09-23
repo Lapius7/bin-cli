@@ -42,6 +42,8 @@ func main() {
 		cmdView(args)
 	case "edit":
 		cmdEdit(args)
+	case "fork":
+		cmdFork(args)
 	case "delete", "rm":
 		cmdDelete(args)
 	case "clone", "download":
@@ -78,6 +80,7 @@ func printUsage() {
 		{"bin view <id> [-f <file>]", T("内容を表示する(-fで1ファイルだけ生出力)")},
 		{"bin edit <id> [<file|dir>...]", T("ファイルを追加・上書きする(--remove <path>で削除)")},
 		{"bin clone <id> [<dir>]", T("Gistのファイルをフォルダ構成ごとダウンロードする")},
+		{"bin fork <id>", T("コピーして自分の新しいGistを作る(自分のGistも可。公開範囲は元のまま)")},
 		{"bin log <id> [-p]", T("変更履歴を git log 風に表示する(-pで差分も表示)")},
 		{"bin delete <id>", T("削除する(確認あり、-yで省略)")},
 	})
@@ -88,7 +91,7 @@ func printUsage() {
 		{T("--sort <順>"), T("updated(既定) / created / oldest")},
 		{"-n, --limit <N>", T("表示件数(既定30)")},
 	})
-	printUsageSection(T("オプション(create/edit)"), [][2]string{
+	printUsageSection(T("オプション(create/edit/fork)"), [][2]string{
 		{"-t, --title <text>", T("タイトル")},
 		{"-d, --description <text>", T("説明")},
 		{"-f, --filename <name>", T("標準入力から読み込む時のファイル名")},
