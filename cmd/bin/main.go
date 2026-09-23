@@ -46,6 +46,8 @@ func main() {
 		cmdDelete(args)
 	case "clone", "download":
 		cmdClone(args)
+	case "log", "history":
+		cmdLog(args)
 	case "version", "--version", "-v":
 		fmt.Println("bin " + version)
 	case "-h", "--help", "help":
@@ -67,17 +69,19 @@ func printUsage() {
 		{"bin whoami", "ログイン中のユーザーを表示する"},
 	})
 	printUsageSection("Gist", [][2]string{
-		{"bin create <file>...", "ファイルからGistを作成する(標準入力からも可: cat x | bin create -f x.txt)"},
-		{"bin list [-u <handle>]", "自分(または指定ユーザー)のGist一覧"},
+		{"bin create <file|dir>...", "ファイル・フォルダからGistを作成する(標準入力からも可: cat x | bin create -f x.txt)"},
+		{"bin list [-u <handle>] [-q <text>]", "自分(または指定ユーザー)のGist一覧・検索"},
 		{"bin view <id> [-f <file>]", "内容を表示する(-fで1ファイルだけ生出力)"},
-		{"bin edit <id> [<file>...]", "ファイルを追加・上書きする(--remove <file>で削除)"},
-		{"bin clone <id> [<dir>]", "Gistのファイルをディレクトリにダウンロードする"},
+		{"bin edit <id> [<file|dir>...]", "ファイルを追加・上書きする(--remove <path>で削除)"},
+		{"bin clone <id> [<dir>]", "Gistのファイルをフォルダ構成ごとダウンロードする"},
+		{"bin log <id> [-p]", "変更履歴を git log 風に表示する(-pで差分も表示)"},
 		{"bin delete <id>", "削除する(確認あり、-yで省略)"},
 	})
 	printUsageSection("オプション(create/edit)", [][2]string{
 		{"-t, --title <text>", "タイトル"},
 		{"-d, --description <text>", "説明"},
 		{"-f, --filename <name>", "標準入力から読み込む時のファイル名"},
+		{"-m, --message <text>", "変更履歴に残すメモ(コミットメッセージ)"},
 		{"--public / --unlisted / --private", "公開範囲(作成時の既定は --unlisted)"},
 	})
 	fmt.Println(dim("<id> にはGistのURL(https://bin.lapius7.com/<id>)もそのまま指定できます。"))
@@ -148,6 +152,7 @@ var gistValueFlags = map[string]string{
 	"-d": "description", "--description": "description",
 	"-f": "filename", "--filename": "filename",
 	"--remove": "remove",
+	"-m":       "message", "--message": "message",
 }
 
 var visibilityFlags = map[string]string{
@@ -213,32 +218,6 @@ func stdinIsPiped() bool {
 func stdoutIsTerminal() bool {
 	info, err := os.Stdout.Stat()
 	return err == nil && info.Mode()&os.ModeCharDevice != 0
-}
-
-// readInputFiles は位置引数のファイルと(パイプされていれば)標準入力を読み込む。
-func readInputFiles(paths []string, stdinName string, allowEmpty bool) []GistFile {
-	var files []GistFile
-	for _, path := range paths {
-		if path == "-" {
-			files = append(files, readStdinFile(stdinName))
-			continue
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			fail(fmt.Errorf("ファイルを読み込めません: %w", err))
-		}
-		if !utf8.Valid(data) || strings.ContainsRune(string(data), 0) {
-			fail(fmt.Errorf("%s はテキストファイルではないため追加できません", path))
-		}
-		files = append(files, GistFile{Filename: filepath.Base(path), Content: string(data)})
-	}
-	if len(paths) == 0 && stdinIsPiped() {
-		files = append(files, readStdinFile(stdinName))
-	}
-	if len(files) == 0 && !allowEmpty {
-		fail(fmt.Errorf("ファイルを指定するか、標準入力から渡してください(例: cat main.go | bin create -f main.go)"))
-	}
-	return files
 }
 
 func readStdinFile(name string) GistFile {
@@ -356,7 +335,9 @@ func cmdCreate(args []string) {
 	title, _ := p.value("title")
 	description, _ := p.value("description")
 
-	id, err := saveGist(cfg, session, nil, title, description, visibility, files)
+	message, _ := p.value("message")
+
+	id, err := saveGist(cfg, session, nil, title, description, visibility, files, message)
 	if err != nil {
 		fail(err)
 	}
@@ -366,7 +347,7 @@ func cmdCreate(args []string) {
 }
 
 func cmdList(args []string) {
-	p := parseArgs(args, map[string]string{"-u": "user", "--user": "user", "-n": "limit", "--limit": "limit"}, nil)
+	p := parseArgs(args, map[string]string{"-u": "user", "--user": "user", "-n": "limit", "--limit": "limit", "-q": "query", "--query": "query"}, nil)
 	limit := 30
 	if v, ok := p.value("limit"); ok {
 		n, err := strconv.Atoi(v)
@@ -392,7 +373,11 @@ func cmdList(args []string) {
 		owner, label = userIDFromToken(session.AccessToken), "自分のGist"
 	}
 
-	items, total, err := listGists(cfg, session, owner, limit, 0)
+	query, _ := p.value("query")
+	if query != "" {
+		label += "(「" + query + "」で検索)"
+	}
+	items, total, err := listGists(cfg, session, owner, limit, 0, query)
 	if err != nil {
 		fail(err)
 	}
@@ -407,7 +392,7 @@ func cmdList(args []string) {
 		for i, f := range g.Files {
 			names[i] = f.Filename
 		}
-		fmt.Fprintf(w, "  %s\t%s\t%s\t%s\n", cyan(g.ID), bold(gistTitle(g.Title, names)), visibilityLabel(g.Visibility), dim(formatDate(g.UpdatedAt)))
+		fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%s\n", cyan(g.ID), bold(gistTitle(g.Title, names)), visibilityLabel(g.Visibility), dim(fmt.Sprintf("%dファイル", len(g.Files))), dim(formatDate(g.UpdatedAt)))
 	}
 	w.Flush()
 	if total > len(items) {
@@ -492,7 +477,7 @@ func cmdView(args []string) {
 func cmdEdit(args []string) {
 	p := parseArgs(args, gistValueFlags, visibilityFlags)
 	if len(p.positional) < 1 {
-		usageExit("bin edit <id> [<file>...] [--remove <file>] [-t <title>] [-d <description>] [--public|--unlisted|--private]")
+		usageExit("bin edit <id> [<file|dir>...] [--remove <path>] [-m <message>] [-t <title>] [-d <description>] [--public|--unlisted|--private]")
 	}
 	id, err := parseGistID(p.positional[0])
 	if err != nil {
@@ -524,18 +509,20 @@ func cmdEdit(args []string) {
 			files = append(files, u)
 		}
 	}
+	// --remove はファイルのパスか、フォルダのパス(その配下をまとめて削除)を受け付ける
 	for _, name := range removes {
+		name = strings.TrimSuffix(name, "/")
 		kept := files[:0]
 		found := false
 		for _, f := range files {
-			if f.Filename == name {
+			if f.Filename == name || strings.HasPrefix(f.Filename, name+"/") {
 				found = true
 				continue
 			}
 			kept = append(kept, f)
 		}
 		if !found {
-			fail(fmt.Errorf("%s というファイルはありません", name))
+			fail(fmt.Errorf("%s というファイル・フォルダはありません", name))
 		}
 		files = kept
 	}
@@ -554,7 +541,8 @@ func cmdEdit(args []string) {
 		fail(fmt.Errorf("変更内容がありません(ファイル・--remove・-t・-d・公開範囲のいずれかを指定してください)"))
 	}
 
-	if _, err := saveGist(cfg, session, &g.ID, title, description, visibility, files); err != nil {
+	message, _ := p.value("message")
+	if _, err := saveGist(cfg, session, &g.ID, title, description, visibility, files, message); err != nil {
 		fail(err)
 	}
 	fmt.Fprintf(os.Stderr, "%s 更新しました\n", green("✓"))
@@ -607,14 +595,16 @@ func cmdClone(args []string) {
 	if err != nil {
 		fail(err)
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		fail(err)
-	}
 	for _, f := range g.Files {
-		// ファイル名はDB側で/や\を禁止しているが、念のためディレクトリ外に書かないようBaseを取る
-		path := filepath.Join(dir, filepath.Base(f.Filename))
+		path, err := safeJoin(dir, f.Filename)
+		if err != nil {
+			fail(err)
+		}
 		if _, err := os.Stat(path); err == nil && !p.bools["force"] {
 			fail(fmt.Errorf("%s は既に存在します(上書きするには --force)", path))
+		}
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			fail(err)
 		}
 		if err := os.WriteFile(path, []byte(f.Content), 0o644); err != nil {
 			fail(err)

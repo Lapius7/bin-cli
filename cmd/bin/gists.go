@@ -80,8 +80,9 @@ func describeDBError(err error) error {
 		{"not_authenticated", "ログインが必要です。`bin login` を実行してください"},
 		{"not_found", "Gistが見つかりません(存在しないか、自分のGistではありません)"},
 		{"files_required", "ファイルを1つ以上指定してください"},
-		{"too_many_files", "ファイルは1つのGistにつき50個までです"},
-		{"invalid_filename", "ファイル名が不正です(1〜255文字、/ や \\ は使えません)"},
+		{"too_many_files", "ファイルは1つのGistにつき300個までです"},
+		{"invalid_filename", "ファイル名が不正です(1〜255文字・10階層まで。空のフォルダ名・.・..・\\ は使えません)"},
+		{"path_conflict", "同じ名前のファイルとフォルダは同時に置けません(例: a と a/b)"},
 		{"duplicate_filename", "同じファイル名が重複しています"},
 		{"file_too_large", "1ファイルあたり1MBまでです"},
 		{"gist_too_large", "1つのGistにつき合計5MBまでです"},
@@ -110,8 +111,12 @@ func getGist(cfg Config, session *Session, id string) (*Gist, error) {
 	return g, nil
 }
 
-func listGists(cfg Config, session *Session, owner string, limit, offset int) ([]GistSummary, int, error) {
-	body, err := rpc(cfg, session, "list_gists", map[string]any{"p_owner": owner, "p_limit": limit, "p_offset": offset})
+func listGists(cfg Config, session *Session, owner string, limit, offset int, query string) ([]GistSummary, int, error) {
+	var q any
+	if query != "" {
+		q = query
+	}
+	body, err := rpc(cfg, session, "list_gists", map[string]any{"p_owner": owner, "p_limit": limit, "p_offset": offset, "p_query": q})
 	if err != nil {
 		return nil, 0, describeDBError(err)
 	}
@@ -125,8 +130,9 @@ func listGists(cfg Config, session *Session, owner string, limit, offset int) ([
 	return out.Items, out.Total, nil
 }
 
-func saveGist(cfg Config, session *Session, id *string, title, description, visibility string, files []GistFile) (string, error) {
+func saveGist(cfg Config, session *Session, id *string, title, description, visibility string, files []GistFile, message string) (string, error) {
 	body, err := rpc(cfg, session, "save_gist", map[string]any{
+		"p_message":     message,
 		"p_id":          id,
 		"p_title":       title,
 		"p_description": description,
