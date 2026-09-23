@@ -102,7 +102,7 @@ func printField(label, value string) {
 	fmt.Printf("  %s %s\n", dim(padLabel(label, labelWidth)), value)
 }
 
-const labelWidth = 14
+const labelWidth = 17
 
 // sectionTitle はアイコン付きの太字見出しを表示する。
 func sectionTitle(icon, title string) {

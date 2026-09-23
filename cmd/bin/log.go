@@ -8,10 +8,40 @@ import (
 )
 
 type Revision struct {
-	Revision  int        `json:"revision"`
-	CreatedAt string     `json:"created_at"`
-	Message   string     `json:"message"`
-	Files     []GistFile `json:"files"`
+	Revision     int        `json:"revision"`
+	CreatedAt    string     `json:"created_at"`
+	Message      string     `json:"message"`
+	Title        *string    `json:"title"`
+	Description  *string    `json:"description"`
+	Visibility   *string    `json:"visibility"`
+	RestoredFrom *int       `json:"restored_from"`
+	Files        []GistFile `json:"files"`
+}
+
+// metaChanges はタイトル・説明・公開範囲の変化を「ラベル: 旧 → 新」の形で返す。
+// スナップショットが無い古いリビジョン(null)との比較では何も返さない。
+func metaChanges(prev, next *Revision) []string {
+	if prev == nil {
+		return nil
+	}
+	empty := func(s string) string {
+		if s == "" {
+			return "(なし)"
+		}
+		return s
+	}
+	var out []string
+	cmp := func(label string, a, b *string, format func(string) string) {
+		if a != nil && b != nil && *a != *b {
+			out = append(out, fmt.Sprintf("%s: %s → %s", label, format(*a), format(*b)))
+		}
+	}
+	cmp("タイトル", prev.Title, next.Title, empty)
+	cmp("説明", prev.Description, next.Description, empty)
+	cmp("公開範囲", prev.Visibility, next.Visibility, func(v string) string {
+		return map[string]string{"public": "公開", "unlisted": "限定公開", "private": "非公開"}[v]
+	})
+	return out
 }
 
 func getRevisions(cfg Config, session *Session, id string) ([]Revision, error) {
@@ -208,12 +238,19 @@ func cmdLog(args []string) {
 		fail(fmt.Errorf("Gistが見つかりません(存在しないか、非公開です)"))
 	}
 
+	byNumber := map[int]*Revision{}
+	for i := range revs {
+		byNumber[revs[i].Revision] = &revs[i]
+	}
 	lastDay := ""
 	for i, r := range revs {
 		var prev []GistFile
+		var prevRev *Revision
 		if i+1 < len(revs) {
 			prev = revs[i+1].Files
+			prevRev = &revs[i+1]
 		}
+		meta := metaChanges(prevRev, &r)
 		changes := changesBetween(prev, r.Files)
 		add, del := 0, 0
 		for _, c := range changes {
@@ -232,10 +269,25 @@ func cmdLog(args []string) {
 		}
 
 		msg := r.Message
+		if r.RestoredFrom != nil {
+			// 復元コミット: 「↺ <復元元ハッシュ>「復元元のメモ」の時点に復元」
+			src := ""
+			if s, ok := byNumber[*r.RestoredFrom]; ok && s.Message != "" {
+				src = "「" + s.Message + "」"
+			}
+			restore := cyan("↺ "+revisionHash(id, *r.RestoredFrom)) + src + "の時点に復元"
+			if msg != "" {
+				msg = restore + " " + msg
+			} else {
+				msg = restore
+			}
+		}
 		if msg == "" {
 			switch {
 			case i == len(revs)-1:
 				msg = "Gistを作成"
+			case len(changes) == 0 && len(meta) > 0:
+				msg = "タイトル等を変更"
 			case len(changes) == 1:
 				msg = changes[0].name + " を" + changes[0].status
 			default:
@@ -250,6 +302,9 @@ func cmdLog(args []string) {
 		fmt.Printf("%s %s %s%s  %s %s  %s\n", yellow("●"), yellow(revisionHash(id, r.Revision)), msg, latest,
 			green(fmt.Sprintf("+%d", add)), red(fmt.Sprintf("-%d", del)), dim(t.Format("15:04")))
 
+		for _, m := range meta {
+			fmt.Printf("  %s %s\n", dim("│"), m)
+		}
 		if p.bools["patch"] {
 			for _, c := range changes {
 				printPatch(c)

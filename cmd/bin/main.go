@@ -30,10 +30,11 @@ func main() {
 	case "login":
 		cmdLogin(args)
 	case "logout":
-		doLogout()
-		success("ログアウトしました。")
+		cmdLogout()
 	case "whoami":
 		cmdWhoami()
+	case "user":
+		cmdUser(args)
 	case "create", "new":
 		cmdCreate(args)
 	case "list", "ls":
@@ -65,8 +66,9 @@ func printUsage() {
 	printUsageSection("認証", [][2]string{
 		{"bin login", "ブラウザでLapount(account.lapius7.com)にログインする"},
 		{"bin login --device", "デバイスコード方式でログインする(SSH越し等、手元でブラウザが開けない場合)"},
-		{"bin logout", "ローカルのセッションを破棄する"},
-		{"bin whoami", "ログイン中のユーザーを表示する"},
+		{"bin logout", "ログアウトする(このCLIのセッションをサーバー側でも失効させる)"},
+		{"bin whoami", "自分のアカウント情報(連携・2段階認証・Gistの集計など)を表示する"},
+		{"bin user -u <handle>", "ユーザーの公開プロフィールと公開Gistの集計を表示する"},
 	})
 	printUsageSection("Gist", [][2]string{
 		{"bin create <file|dir>...", "ファイル・フォルダからGistを作成する(標準入力からも可: cat x | bin create -f x.txt)"},
@@ -270,56 +272,6 @@ func cmdLogin(args []string) {
 	}
 	success("ログインしました")
 	cmdWhoami()
-}
-
-type myProfile struct {
-	Handle      *string `json:"handle"`
-	DisplayName *string `json:"display_name"`
-}
-
-func fetchMyProfile(cfg Config, session *Session) (string, *myProfile, error) {
-	userID := userIDFromToken(session.AccessToken)
-	body, err := restRequest(cfg, session, http.MethodGet, "/rest/v1/user_profiles?select=handle,display_name&user_id=eq."+url.QueryEscape(userID), "", nil)
-	if err != nil {
-		return userID, nil, err
-	}
-	var rows []myProfile
-	_ = json.Unmarshal(body, &rows)
-	if len(rows) == 0 {
-		return userID, nil, nil
-	}
-	return userID, &rows[0], nil
-}
-
-func cmdWhoami() {
-	cfg, session := requireSession()
-	_, profile, err := fetchMyProfile(cfg, session)
-	if err != nil {
-		fail(err)
-	}
-	name, handle := "", ""
-	if profile != nil {
-		if profile.DisplayName != nil {
-			name = *profile.DisplayName
-		}
-		if profile.Handle != nil {
-			handle = *profile.Handle
-		}
-	}
-	if name == "" {
-		name = session.Email
-	}
-	if handle != "" {
-		fmt.Printf("%s %s\n", bold(name), dim("@"+handle))
-	} else {
-		fmt.Printf("%s %s\n", bold(name), dim("(ハンドル名未設定)"))
-	}
-	if session.Email != "" {
-		fmt.Println(dim(session.Email))
-	}
-	if handle != "" {
-		fmt.Println(dim(cfg.SiteURL + "/u/" + handle))
-	}
 }
 
 func cmdCreate(args []string) {
