@@ -19,7 +19,7 @@ for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64; d
   os="${target%/*}"; arch="${target#*/}"
   ext=""; [ "$os" = windows ] && ext=".exe"
   echo "→ ${os}/${arch}"
-  CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath \
+  CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath -buildvcs=false \
     -ldflags "-s -w -X main.version=${VERSION}" \
     -o "${OUT}/bin-${os}-${arch}${ext}" ./cmd/bin
 done
