@@ -406,6 +406,24 @@ func cmdView(args []string) {
 		fmt.Println(g.Description)
 	}
 	fmt.Println(dim(fmt.Sprintf(T("%s · 更新 %s · リビジョン %d"), gistURL(cfg, g.ID), formatDate(g.UpdatedAt), g.RevisionCount)))
+	if s := g.ForkSource; s != nil {
+		if s.Hidden {
+			fmt.Println(dim("↳ " + T("非公開または限定公開のGistからフォーク")))
+		} else {
+			title := s.Title
+			if title == "" && s.FirstFile != nil {
+				title = *s.FirstFile
+			}
+			src := title
+			if s.Owner.Handle != nil {
+				src = "@" + *s.Owner.Handle + " / " + title
+			}
+			fmt.Println(dim("↳ ") + fmt.Sprintf(T("%s からフォーク"), src) + " " + dim(gistURL(cfg, s.ID)))
+		}
+	}
+	if g.ForkCount > 0 {
+		fmt.Println(dim(fmt.Sprintf(Tn("フォーク %d件", g.ForkCount), g.ForkCount) + " · " + gistURL(cfg, g.ID) + "/forks"))
+	}
 	for _, f := range g.Files {
 		fmt.Printf("\n%s %s\n", cyan("──"), bold(f.Filename))
 		fmt.Print(f.Content)

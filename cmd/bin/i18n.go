@@ -63,9 +63,10 @@ func Tn(ja string, n int) string {
 
 // 英語の単数形(件数が1の時)
 var messagesOne = map[string]string{
-	"%dファイル":                        "%d file",
-	"%dファイル · %s":                   "%d file · %s",
-	"%s 作成しました(%s・%dファイル)\n":        "%s Created (%s, %d file)\n",
+	"フォーク %d件":               "%d fork",
+	"%dファイル":                 "%d file",
+	"%dファイル · %s":            "%d file · %s",
+	"%s 作成しました(%s・%dファイル)\n": "%s Created (%s, %d file)\n",
 	"%s 「%s」をフォークしました(%s・%dファイル)\n": "%s Forked \"%s\" (%s, %d file)\n",
 	"%dファイルを %s にダウンロードしました":        "Downloaded %d file to %s",
 }

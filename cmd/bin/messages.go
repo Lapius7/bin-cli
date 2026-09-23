@@ -206,8 +206,10 @@ var messages = map[string][2]string{
 	"新しいバージョン %s が配布されています": {"A new version %s is available", "새 버전 %s 이(가) 배포되었습니다"},
 	"更新:": {"Update:", "업데이트:"},
 	"コピーして自分の新しいGistを作る(自分のGistも可。公開範囲は元のまま)": {"Copy a gist into a new gist of your own (works on your own gists too; keeps the visibility)", "복사해서 내 새 Gist를 만든다 (내 Gist도 가능. 공개 범위는 원본 그대로)"},
-	"フォークはできましたが、タイトル等の変更に失敗しました: %v":         {"Forked, but failed to change the title etc.: %v", "포크는 되었지만 제목 등의 변경에 실패했습니다: %v"},
 	"%s 「%s」をフォークしました(%s・%dファイル)\n":           {"%s Forked \"%s\" (%s, %d files)\n", "%s 「%s」을(를) 포크했습니다 (%s・파일 %d개)\n"},
 	"元のGistはそのまま残ります。":                        {"The original gist is left as is.", "원본 Gist는 그대로 남습니다."},
 	"手元で編集:": {"Edit locally:", "로컬에서 편집:"},
+	"非公開または限定公開のGistからフォーク": {"Forked from a private or unlisted gist", "비공개 또는 일부 공개 Gist에서 포크"},
+	"%s からフォーク":             {"Forked from %s", "%s 에서 포크"},
+	"フォーク %d件":              {"%d forks", "포크 %d개"},
 }

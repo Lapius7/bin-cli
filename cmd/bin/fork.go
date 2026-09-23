@@ -6,8 +6,13 @@ import (
 	"os"
 )
 
-func forkGist(cfg Config, session *Session, id string) (string, error) {
-	body, err := rpc(cfg, session, "fork_gist", map[string]any{"p_id": id})
+// forkGist はフォークする。overrides に p_title / p_description / p_visibility を入れるとその値で作る(無ければ元と同じ)
+func forkGist(cfg Config, session *Session, id string, overrides map[string]any) (string, error) {
+	args := map[string]any{"p_id": id}
+	for k, v := range overrides {
+		args[k] = v
+	}
+	body, err := rpc(cfg, session, "fork_gist", args)
 	if err != nil {
 		return "", describeDBError(err)
 	}
@@ -19,17 +24,16 @@ func forkGist(cfg Config, session *Session, id string) (string, error) {
 }
 
 // cmdFork はGistをコピーして自分の新しいGistを作る。自分のGistもフォークでき、元を残したまま派生版を作れる。
-// 公開範囲は元のまま(DB側のfork_gistが引き継ぐ)。-t/-d/公開範囲を指定した時は、フォーク直後に1回だけ更新する
-// (変更履歴には「フォーク」と「その変更」の2件が残る)。
+// 公開範囲は省略すると元のまま(DB側のfork_gistが引き継ぐ)。-t/-d/公開範囲はフォークと同時に反映する
+// (変更履歴は「フォーク」の1件だけ)。
 // createと同じく、標準出力には新しいGistのURLだけを出す
 func cmdFork(args []string) {
 	p := parseArgs(args, map[string]string{
 		"-t": "title", "--title": "title",
 		"-d": "description", "--description": "description",
-		"-m": "message", "--message": "message",
 	}, visibilityFlags)
 	if len(p.positional) != 1 {
-		usageExit("bin fork <id> [-t <title>] [-d <description>] [-m <message>] [--public|--unlisted|--private]")
+		usageExit("bin fork <id> [-t <title>] [-d <description>] [--public|--unlisted|--private]")
 	}
 	id, err := parseGistID(p.positional[0])
 	if err != nil {
@@ -40,28 +44,21 @@ func cmdFork(args []string) {
 	if err != nil {
 		fail(err)
 	}
-	newID, err := forkGist(cfg, session, src.ID)
-	if err != nil {
-		fail(err)
-	}
-
-	title, description, visibility := src.Title, src.Description, src.Visibility
+	overrides := map[string]any{}
+	visibility := src.Visibility
 	if v, ok := p.value("title"); ok {
-		title = v
+		overrides["p_title"] = v
 	}
 	if v, ok := p.value("description"); ok {
-		description = v
+		overrides["p_description"] = v
 	}
 	if v, ok := pickVisibility(p); ok {
+		overrides["p_visibility"] = v
 		visibility = v
 	}
-	if title != src.Title || description != src.Description || visibility != src.Visibility {
-		message, _ := p.value("message")
-		if _, err := saveGist(cfg, session, &newID, title, description, visibility, src.Files, message); err != nil {
-			// フォーク自体はできているので、URLは出してから失敗を伝える
-			fmt.Println(gistURL(cfg, newID))
-			fail(fmt.Errorf(T("フォークはできましたが、タイトル等の変更に失敗しました: %v"), err))
-		}
+	newID, err := forkGist(cfg, session, src.ID, overrides)
+	if err != nil {
+		fail(err)
 	}
 
 	names := make([]string, len(src.Files))

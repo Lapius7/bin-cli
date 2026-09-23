@@ -20,15 +20,26 @@ type GistOwner struct {
 }
 
 type Gist struct {
-	ID            string     `json:"id"`
-	Title         string     `json:"title"`
-	Description   string     `json:"description"`
-	Visibility    string     `json:"visibility"`
-	CreatedAt     string     `json:"created_at"`
-	UpdatedAt     string     `json:"updated_at"`
-	Owner         GistOwner  `json:"owner"`
-	RevisionCount int        `json:"revision_count"`
-	Files         []GistFile `json:"files"`
+	ID            string      `json:"id"`
+	Title         string      `json:"title"`
+	Description   string      `json:"description"`
+	Visibility    string      `json:"visibility"`
+	CreatedAt     string      `json:"created_at"`
+	UpdatedAt     string      `json:"updated_at"`
+	Owner         GistOwner   `json:"owner"`
+	RevisionCount int         `json:"revision_count"`
+	ForkSource    *ForkSource `json:"fork_source"`
+	ForkCount     int         `json:"fork_count"`
+	Files         []GistFile  `json:"files"`
+}
+
+// ForkSource はフォーク元の概要。見せられない元(他人の非公開・限定公開)は Hidden だけが立つ
+type ForkSource struct {
+	Hidden    bool      `json:"hidden"`
+	ID        string    `json:"id"`
+	Title     string    `json:"title"`
+	FirstFile *string   `json:"first_file"`
+	Owner     GistOwner `json:"owner"`
 }
 
 type GistSummary struct {
