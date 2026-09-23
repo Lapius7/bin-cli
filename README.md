@@ -22,6 +22,7 @@ bin view <id>                               # 表示(-f <file> で1ファイル�
 bin edit <id> main.go --remove old.go -t "新しいタイトル" --public
 bin clone <id> [dir]                        # ファイルをダウンロード
 bin delete <id>                             # 削除(確認あり、-yで省略)
+bin version                                 # バージョン表示。配布中の最新版かどうかも確かめる
 ```
 
 `<id>`にはGistのURLもそのまま渡せる。
@@ -38,6 +39,8 @@ bin delete <id>                             # 削除(確認あり、-yで省略)
 ```bash
 ./build.sh    # 全OS/CPU向けにクロスコンパイルし、web/bin.lapius7.com/server/cli-dist/ へinstall.shと一緒に配置
 ```
+
+バージョンは`日付-コミットの短縮ハッシュ`(未コミットの変更があれば`-dirty`付き)。同時に`VERSION`と`build.json`(バージョン・ビルド日時・コミット・各バイナリのSHA-256)も書き出し、https://bin.lapius7.com/cli の「配布中の最新版」はこれを読んで表示する。インストーラーは最後に入ったバイナリの`bin version`を実行して、配布中の版と一致するか照合する。
 
 bin-serverがそのディレクトリを`/install.sh`・`/cli/*`として配信するので、再起動は不要。
 

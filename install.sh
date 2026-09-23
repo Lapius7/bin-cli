@@ -71,6 +71,11 @@ esac
 VERSION="$(curl -fsSL "${BASE_URL}/cli/VERSION" 2>/dev/null || echo "?")"
 info "$(m "bin ${VERSION} (${OS}/${ARCH}) をダウンロード中" "Downloading bin ${VERSION} (${OS}/${ARCH})" "bin ${VERSION} (${OS}/${ARCH}) 다운로드 중")"
 
+# 上書き前に入っていたバージョン(更新の前後を表示するため)。1行目が「bin <バージョン>」
+installed_version() { "$1" version 2>/dev/null | head -n1 | sed 's/^bin //'; }
+PREV=""
+[ -x "${INSTALL_DIR}/bin" ] && PREV="$(installed_version "${INSTALL_DIR}/bin" || true)"
+
 mkdir -p "$INSTALL_DIR"
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
@@ -82,6 +87,25 @@ chmod +x "$TMP"
 mv "$TMP" "${INSTALL_DIR}/bin"
 trap - EXIT
 ok "$(m "インストール先" "Installed to" "설치 위치"): ${DIM}${INSTALL_DIR}/bin${RESET}"
+
+# 入ったバイナリを実際に実行して、配布中の最新版と同じバージョンかを確かめる
+NOW="$(installed_version "${INSTALL_DIR}/bin" || true)"
+if [ -z "$NOW" ]; then
+  warn "$(m "インストールしたbinを実行できませんでした" "Could not run the installed bin" "설치한 bin 을 실행하지 못했습니다")"
+elif [ "$VERSION" != "?" ] && [ "$NOW" != "$VERSION" ]; then
+  warn "$(m "インストールされたのは ${NOW} で、配布中の最新版 ${VERSION} と一致しません。もう一度実行してください" \
+            "Installed ${NOW}, which does not match the latest release ${VERSION}. Please run the installer again" \
+            "설치된 버전은 ${NOW} 이며 배포 중인 최신 버전 ${VERSION} 과 일치하지 않습니다. 다시 실행해 주세요")"
+else
+  if [ -n "$PREV" ] && [ "$PREV" != "$NOW" ]; then
+    ok "$(m "バージョン" "Version" "버전"): ${DIM}${PREV}${RESET} → ${BOLD}${NOW}${RESET}"
+  elif [ -n "$PREV" ]; then
+    ok "$(m "バージョン" "Version" "버전"): ${BOLD}${NOW}${RESET} ${DIM}($(m "すでに最新版でした" "already up to date" "이미 최신 버전이었습니다"))${RESET}"
+  else
+    ok "$(m "バージョン" "Version" "버전"): ${BOLD}${NOW}${RESET}"
+  fi
+  [ "$VERSION" != "?" ] && printf "  %s%s%s\n" "$DIM" "$(m "配布中の最新版と一致しています(${BASE_URL}/cli に表示されている版と同じです)" "Matches the latest release (the one shown at ${BASE_URL}/cli)" "배포 중인 최신 버전과 일치합니다 (${BASE_URL}/cli 에 표시된 버전과 같습니다)")" "$RESET"
+fi
 
 case ":${PATH}:" in
   *":${INSTALL_DIR}:"*) ;;

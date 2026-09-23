@@ -201,4 +201,8 @@ var messages = map[string][2]string{
 	"削除":         {"deleted", "삭제"},
 	"公開範囲":       {"Visibility", "공개 범위"},
 	"(なし)":       {"(none)", "(없음)"},
+	"最新版です":      {"You are on the latest version", "최신 버전입니다"},
+	"開発版です(配布中の最新版: %s)":    {"Development build (latest release: %s)", "개발 버전입니다 (배포 중인 최신 버전: %s)"},
+	"新しいバージョン %s が配布されています": {"A new version %s is available", "새 버전 %s 이(가) 배포되었습니다"},
+	"更新:": {"Update:", "업데이트:"},
 }

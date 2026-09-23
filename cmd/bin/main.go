@@ -51,7 +51,7 @@ func main() {
 	case "log", "history":
 		cmdLog(args)
 	case "version", "--version", "-v":
-		fmt.Println("bin " + version)
+		cmdVersion()
 	case "-h", "--help", "help":
 		printUsage()
 	default:
