@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 // Session は~/.config/bin/session.jsonの内容。
@@ -119,4 +120,24 @@ func fetchEmail(cfg Config, accessToken string) string {
 		return ""
 	}
 	return u.Email
+}
+
+// freshenSession は、アクセストークンが切れている(またはあと1分以内に切れる)なら先に更新しておく。
+// 期限切れのまま送ると、エンドポイントによっては401ではなく403(GoTrueの /auth/v1/user 等)が返り、
+// 401を見て更新する仕組みでは拾えないため(bin whoami で連携情報が取れなかった)
+func freshenSession(cfg Config, session *Session) error {
+	if session == nil || session.APIToken || session.RefreshToken == "" {
+		return nil
+	}
+	exp := tokenExpiry(session.AccessToken)
+	if exp.IsZero() || time.Until(exp) > time.Minute {
+		return nil
+	}
+	return refreshAccessToken(cfg, session)
+}
+
+// isExpiredResponse は「アクセストークン切れ」の応答か。401のほか、GoTrueは期限切れのJWTに403
+// (invalid JWT … token is expired)を返すので、それも含める
+func isExpiredResponse(status int, body []byte) bool {
+	return status == 401 || (status == 403 && strings.Contains(string(body), "expired"))
 }

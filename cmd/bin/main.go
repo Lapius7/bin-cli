@@ -232,6 +232,9 @@ func requireSession() (Config, *Session) {
 	if err != nil {
 		fail(fmt.Errorf(T("ログインしていません。先に `bin login` を実行してください")))
 	}
+	if err := freshenSession(cfg, session); err != nil {
+		fail(err)
+	}
 	return cfg, session
 }
 
@@ -240,6 +243,11 @@ func optionalSession() (Config, *Session) {
 	cfg := loadConfig()
 	session, err := loadSession()
 	if err != nil {
+		return cfg, nil
+	}
+	// 更新できない(refresh_tokenも失効している)時は、未ログインとして続ける(公開Gistの閲覧等はできる)
+	if err := freshenSession(cfg, session); err != nil {
+		warnErr("%v", err)
 		return cfg, nil
 	}
 	return cfg, session

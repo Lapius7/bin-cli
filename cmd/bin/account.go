@@ -41,7 +41,7 @@ type authUser struct {
 	Factors      []mfaFactor `json:"factors"`
 }
 
-// fetchAuthUser は/auth/v1/userを呼ぶ。401ならrefresh_tokenで1回だけ更新して再試行する。
+// fetchAuthUser は/auth/v1/userを呼ぶ。トークン切れ(401、または期限切れの403)ならrefresh_tokenで1回だけ更新して再試行する。
 func fetchAuthUser(cfg Config, session *Session) (*authUser, error) {
 	do := func() ([]byte, int, error) {
 		req, err := http.NewRequest(http.MethodGet, strings.TrimRight(cfg.SupabaseURL, "/")+"/auth/v1/user", nil)
@@ -62,7 +62,7 @@ func fetchAuthUser(cfg Config, session *Session) (*authUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	if status == 401 {
+	if isExpiredResponse(status, body) && !session.APIToken {
 		if err := refreshAccessToken(cfg, session); err != nil {
 			return nil, err
 		}

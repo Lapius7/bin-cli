@@ -17,8 +17,8 @@ func restRequest(cfg Config, session *Session, method, path, schema string, body
 	if err != nil {
 		return nil, err
 	}
-	if status == 401 {
-		if session != nil && session.APIToken {
+	if isExpiredResponse(status, respBody) && session != nil {
+		if session.APIToken {
 			return nil, fmt.Errorf("%s", T("APIトークンが無効か、期限切れ・失効済みです(BIN_TOKEN を確認してください)"))
 		}
 		// アクセストークンが期限切れ(GoTrueのJWT_EXPIRY、現在1時間)なだけの可能性が高いので、
