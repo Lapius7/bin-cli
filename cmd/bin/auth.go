@@ -15,6 +15,8 @@ type Session struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	Email        string `json:"email"`
+	// BIN_TOKEN(APIトークン)で動いている時。保存はしない
+	APIToken bool `json:"-"`
 }
 
 func saveSession(s Session) error {
@@ -29,6 +31,10 @@ func saveSession(s Session) error {
 }
 
 func loadSession() (*Session, error) {
+	// APIトークンがあれば bin login のセッションより優先する(CI・スクリプト向け)
+	if token := strings.TrimSpace(os.Getenv("BIN_TOKEN")); token != "" {
+		return &Session{AccessToken: token, APIToken: true}, nil
+	}
 	data, err := os.ReadFile(sessionFilePath())
 	if err != nil {
 		return nil, err

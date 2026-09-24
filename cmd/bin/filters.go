@@ -79,6 +79,7 @@ var listValueFlags = map[string]string{
 	"-l": "lang", "--lang": "lang",
 	"--since": "since",
 	"--sort":  "sort",
+	"--tag":   "tag",
 }
 
 // filterFromArgs は -q / -l / --since / --sort を listFilter に変換し、見出し用の説明も返す
@@ -111,12 +112,16 @@ func filterFromArgs(p parsedArgs) (listFilter, []string, int) {
 	}
 	if v, ok := p.value("sort"); ok && v != "" {
 		switch v {
-		case "updated", "created", "oldest":
+		case "updated", "created", "oldest", "stars":
 			f.Sort = v
 		default:
-			fail(fmt.Errorf(T("--sort には updated / created / oldest のどれかを指定してください")))
+			fail(fmt.Errorf(T("--sort には updated / created / oldest / stars のどれかを指定してください")))
 		}
-		notes = append(notes, map[string]string{"updated": T("更新が新しい順"), "created": T("作成が新しい順"), "oldest": T("作成が古い順")}[v])
+		notes = append(notes, map[string]string{"updated": T("更新が新しい順"), "created": T("作成が新しい順"), "oldest": T("作成が古い順"), "stars": T("スターが多い順")}[v])
+	}
+	if v, ok := p.value("tag"); ok && v != "" {
+		f.Tag = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(v)), "#")
+		notes = append(notes, "#"+f.Tag)
 	}
 	return f, notes, limit
 }
@@ -143,7 +148,17 @@ func printGistTable(label string, notes []string, items []GistSummary, total int
 		} else if showOwner {
 			owner = "\t"
 		}
-		fmt.Fprintf(w, "  %s\t%s%s\t%s\t%s\t%s\n", cyan(g.ID), owner, bold(gistTitle(g.Title, names)), visibilityLabel(g.Visibility), dim(fmt.Sprintf(Tn("%dファイル", len(g.Files)), len(g.Files))), dim(formatDate(g.UpdatedAt)))
+		extra := ""
+		if g.StarCount > 0 {
+			extra += yellow(fmt.Sprintf("★%d", g.StarCount)) + " "
+		}
+		if len(g.Tags) > 0 {
+			extra += formatTags(g.Tags)
+		}
+		fmt.Fprintf(w, "  %s\t%s%s\t%s\t%s\t%s\t%s\n", cyan(g.ID), owner, bold(gistTitle(g.Title, names)), visibilityLabel(g.Visibility), dim(fmt.Sprintf(Tn("%dファイル", len(g.Files)), len(g.Files))), dim(formatDate(g.UpdatedAt)), extra)
+		if g.Match != nil {
+			fmt.Fprintf(w, "  \t%s\n", dim(fmt.Sprintf("↳ %s:%d  ", g.Match.Filename, g.Match.Line))+strings.TrimSpace(g.Match.Text))
+		}
 	}
 	w.Flush()
 	if total > len(items) {

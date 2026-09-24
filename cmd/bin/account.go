@@ -251,6 +251,12 @@ func printRecent(cfg Config, st *gistStats) {
 
 func cmdWhoami() {
 	cfg, session := requireSession()
+	if session.APIToken {
+		fmt.Println(bold(T("APIトークン(BIN_TOKEN)で認証しています")))
+		printField(T("ユーザーID"), userIDFromToken(session.AccessToken))
+		fmt.Println(dim(T("アカウントの詳しい情報は、BIN_TOKEN を外して bin login した状態で確認できます")))
+		return
+	}
 	userID := userIDFromToken(session.AccessToken)
 	// Lapount独自発行のトークン等で/auth/v1/userが使えない場合もあるので、失敗しても他の情報は出す
 	au, authErr := fetchAuthUser(cfg, session)
@@ -427,6 +433,9 @@ func cmdUser(args []string) {
 // scope=localなので、ブラウザや他の端末のログインには影響しない。
 func cmdLogout() {
 	cfg, session := requireSession()
+	if session.APIToken {
+		fail(fmt.Errorf("%s", T("APIトークン(BIN_TOKEN)を使っている間はログアウトできません。環境変数 BIN_TOKEN を外してください(トークン自体の失効は bin token revoke)")))
+	}
 	req, err := http.NewRequest(http.MethodPost, strings.TrimRight(cfg.SupabaseURL, "/")+"/auth/v1/logout?scope=local", nil)
 	if err == nil {
 		req.Header.Set("apikey", cfg.AnonKey)

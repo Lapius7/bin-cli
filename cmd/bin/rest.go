@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -17,6 +18,9 @@ func restRequest(cfg Config, session *Session, method, path, schema string, body
 		return nil, err
 	}
 	if status == 401 {
+		if session != nil && session.APIToken {
+			return nil, fmt.Errorf("%s", T("APIトークンが無効か、期限切れ・失効済みです(BIN_TOKEN を確認してください)"))
+		}
 		// アクセストークンが期限切れ(GoTrueのJWT_EXPIRY、現在1時間)なだけの可能性が高いので、
 		// 保存済みのRefreshTokenでの更新を1回だけ試してから同じリクエストをやり直す。
 		// 以前はここで即座に「`bin login`でやり直せ」と案内していたため、1時間おきに

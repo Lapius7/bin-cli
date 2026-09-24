@@ -30,6 +30,9 @@ type Gist struct {
 	RevisionCount int         `json:"revision_count"`
 	ForkSource    *ForkSource `json:"fork_source"`
 	ForkCount     int         `json:"fork_count"`
+	Tags          []string    `json:"tags"`
+	StarCount     int         `json:"star_count"`
+	CommentCount  int         `json:"comment_count"`
 	Files         []GistFile  `json:"files"`
 }
 
@@ -49,7 +52,15 @@ type GistSummary struct {
 	Visibility  string    `json:"visibility"`
 	UpdatedAt   string    `json:"updated_at"`
 	Owner       GistOwner `json:"owner"`
-	Files       []struct {
+	Tags        []string  `json:"tags"`
+	StarCount   int       `json:"star_count"`
+	// 検索(-q)で本文に一致した最初の行
+	Match *struct {
+		Filename string `json:"filename"`
+		Line     int    `json:"line"`
+		Text     string `json:"text"`
+	} `json:"match"`
+	Files []struct {
 		Filename string `json:"filename"`
 		Size     int64  `json:"size"`
 	} `json:"files"`
@@ -128,7 +139,8 @@ type listFilter struct {
 	Query string
 	Since string   // RFC3339
 	Exts  []string // 言語(拡張子・拡張子の無いファイル名)
-	Sort  string   // updated / created / oldest
+	Sort  string   // updated / created / oldest / stars
+	Tag   string
 }
 
 func listGists(cfg Config, session *Session, f listFilter, limit, offset int) ([]GistSummary, int, error) {
@@ -147,6 +159,9 @@ func listGists(cfg Config, session *Session, f listFilter, limit, offset int) ([
 	}
 	if f.Sort != "" && f.Sort != "updated" {
 		args["p_sort"] = f.Sort
+	}
+	if f.Tag != "" {
+		args["p_tag"] = f.Tag
 	}
 	body, err := rpc(cfg, session, "list_gists", args)
 	if err != nil {

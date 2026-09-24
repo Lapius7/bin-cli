@@ -52,6 +52,26 @@ func main() {
 		cmdTimeline(args)
 	case "log", "history":
 		cmdLog(args)
+	case "status", "st":
+		cmdStatus(args)
+	case "pull":
+		cmdPull(args)
+	case "push":
+		cmdPush(args)
+	case "sync":
+		cmdSync(args)
+	case "run":
+		cmdRun(args)
+	case "star":
+		cmdStar(args, true)
+	case "unstar":
+		cmdStar(args, false)
+	case "starred", "stars":
+		cmdStarred(args)
+	case "tag", "tags":
+		cmdTag(args)
+	case "token", "tokens":
+		cmdToken(args)
 	case "version", "--version", "-v":
 		cmdVersion()
 	case "-h", "--help", "help":
@@ -83,6 +103,24 @@ func printUsage() {
 		{"bin fork <id>", T("コピーして自分の新しいGistを作る(自分のGistも可。公開範囲は元のまま)")},
 		{"bin log <id> [-p]", T("変更履歴を git log 風に表示する(-pで差分も表示)")},
 		{"bin delete <id>", T("削除する(確認あり、-yで省略)")},
+	})
+	printUsageSection(T("スター・タグ"), [][2]string{
+		{"bin star <id> / bin unstar <id>", T("スターを付ける・外す")},
+		{"bin starred [-u <handle>]", T("スターしたGistの一覧")},
+		{"bin tag <id> [<tag>...]", T("タグを設定する(指定しなければ表示、--clearで外す)")},
+	})
+	printUsageSection(T("同期・実行(clone したフォルダで)"), [][2]string{
+		{"bin status", T("手元の変更とGist側の新しい変更を表示する")},
+		{"bin pull", T("Gist側の変更を取り込む(両方で変えたファイルは止まる。--forceでGist側を優先)")},
+		{"bin push [-m <message>]", T("手元のフォルダの内容でGistを更新する")},
+		{"bin sync [-m <message>]", T("pull してから、手元の変更があれば push する")},
+		{"bin run <id> [-f <file>] [-- <args>]", T("Gistのスクリプトを実行する(実行前に内容を表示して確認。-yで省略)")},
+		{"git clone " + defaultSiteURL + "/<id>.git", T("git でも取得できる(読み取り専用。非公開はパスワードにAPIトークン)")},
+	})
+	printUsageSection(T("APIトークン(CI・スクリプト用)"), [][2]string{
+		{"bin token create <name> [--read]", T("APIトークンを発行する(--expires <日数> で期限付き)")},
+		{"bin token list / bin token revoke <id>", T("一覧・失効")},
+		{"BIN_TOKEN=<token> bin …", T("bin login の代わりにAPIトークンで操作する")},
 	})
 	printUsageSection(T("絞り込み(list/timeline)"), [][2]string{
 		{"-q, --query <text>", T("タイトル・説明・ファイルパスで検索")},
@@ -209,6 +247,9 @@ func optionalSession() (Config, *Session) {
 
 // userIDFromToken はアクセストークン(JWT)のsubを取り出す(署名検証はサーバー側で行われる)。
 func userIDFromToken(token string) string {
+	if strings.HasPrefix(token, "lbt_") {
+		return tokenOwner(loadConfig(), token)
+	}
 	parts := strings.Split(token, ".")
 	if len(parts) < 2 {
 		return ""
@@ -406,6 +447,19 @@ func cmdView(args []string) {
 		fmt.Println(g.Description)
 	}
 	fmt.Println(dim(fmt.Sprintf(T("%s · 更新 %s · リビジョン %d"), gistURL(cfg, g.ID), formatDate(g.UpdatedAt), g.RevisionCount)))
+	if len(g.Tags) > 0 || g.StarCount > 0 || g.CommentCount > 0 {
+		line := []string{}
+		if g.StarCount > 0 {
+			line = append(line, yellow(fmt.Sprintf("★%d", g.StarCount)))
+		}
+		if g.CommentCount > 0 {
+			line = append(line, dim(fmt.Sprintf(Tn("コメント %d件", g.CommentCount), g.CommentCount)))
+		}
+		if len(g.Tags) > 0 {
+			line = append(line, formatTags(g.Tags))
+		}
+		fmt.Println(strings.Join(line, "  "))
+	}
 	if s := g.ForkSource; s != nil {
 		if s.Hidden {
 			fmt.Println(dim("↳ " + T("非公開または限定公開のGistからフォーク")))
@@ -575,5 +629,16 @@ func cmdClone(args []string) {
 		}
 		fmt.Println(dim("  " + path))
 	}
+	// 同期(bin status / pull / push / sync)の基準を残す
+	if err := writeSyncMeta(dir, metaFromGist(g)); err != nil {
+		warnErr(T("%s を書き込めませんでした: %v"), syncMetaFile, err)
+	}
+	recordHit(cfg, session, g.ID, "download")
 	success(Tn("%dファイルを %s にダウンロードしました", len(g.Files)), len(g.Files), dir)
+	fmt.Println(dim("  " + T("このフォルダで bin status / bin pull / bin push / bin sync が使えます")))
+}
+
+func stdinIsTerminal() bool {
+	info, err := os.Stdin.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }

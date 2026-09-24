@@ -23,10 +23,35 @@ bin edit <id> main.go --remove old.go -t "新しいタイトル" --public
 bin clone <id> [dir]                        # ファイルをダウンロード
 bin fork <id> -t "派生版"                     # コピーして自分の新しいGistを作る(自分のGistも可、公開範囲は元のまま)
 bin delete <id>                             # 削除(確認あり、-yで省略)
+bin star <id> / bin starred               # スター・スターしたGistの一覧
+bin tag <id> python cli                     # タグを設定(bin list --tag python で絞り込み)
+bin run <id>                                # スクリプトを実行(実行前に内容を表示して確認)
 bin version                                 # バージョン表示。配布中の最新版かどうかも確かめる
 ```
 
 `<id>`にはGistのURLもそのまま渡せる。
+
+### 手元のフォルダと同期
+
+```bash
+bin clone <id> && cd <id>   # .lapbin.json(取得した時点のリビジョンと各ファイルのSHA-256)も置かれる
+bin status                  # 手元の変更と、Gist側に新しいリビジョンがあるか
+bin pull                    # Gist側の変更を取り込む(両方で変えたファイルがあれば止まる。--forceでGist側を優先)
+bin push -m "メモ"          # 手元のフォルダの内容でGistを更新(Gist側が先に更新されていたら止まる)
+bin sync                    # pull してから、手元の変更があれば push
+```
+
+git でも取得できる(読み取り専用): `git clone https://bin.lapius7.com/<id>.git`。非公開のGistはパスワードにAPIトークン。
+
+### APIトークン(CI・スクリプト用)
+
+```bash
+bin token create ci --expires 90     # 発行(トークンは標準出力にだけ出る。--read で読み取り専用)
+BIN_TOKEN=lbt_… bin list            # bin login の代わりに使う
+bin token list / bin token revoke <id>
+```
+
+トークンで使えるのはLapBinの操作だけ(bin-serverが許可リストで制限し、持ち主として動く短命のJWTに差し替えて中継する)。発行・失効は bin login したセッションからのみ。Webの /settings/tokens でも管理できる。
 
 ## 仕組み
 
