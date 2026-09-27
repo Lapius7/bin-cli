@@ -4,6 +4,16 @@
 
 ## インストール
 
+npm(Linux / macOS / Windows):
+
+```bash
+npm i -g @lapius/bin-cli
+```
+
+OS/CPUに合ったビルド済みバイナリが入る(Linux/macOSでは初回の起動時にnodeのシムがネイティブバイナリに置き換わり、以後はnodeを経由しない)。更新は同じコマンドで行う。
+
+npmがない場合:
+
 ```bash
 curl -fsSL https://bin.lapius7.com/install.sh | bash
 ```
@@ -69,6 +79,9 @@ bin token list / bin token revoke <id>
 バージョンは`日付-コミットの短縮ハッシュ`(未コミットの変更があれば`-dirty`付き)。同時に`VERSION`と`build.json`(バージョン・ビルド日時・コミット・各バイナリのSHA-256)も書き出し、https://bin.lapius7.com/cli の「配布中の最新版」はこれを読んで表示する。インストーラーは最後に入ったバイナリの`bin version`を実行して、配布中の版と一致するか照合する。
 
 bin-serverがそのディレクトリを`/install.sh`・`/cli/*`として配信するので、再起動は不要。
+
+npm版は`v*`タグをpushするとGitHub Actions(`.github/workflows/release.yml`)が`npm/build.mjs`でビルドしてnpmに公開し、GitHub Releaseにもバイナリを添付する(npmのTrusted Publisherで認証するのでトークンは不要)。手元での確認は`node npm/build.mjs 0.0.0-dev --pack`。
+npm版は`-X main.channel=npm`付きでビルドされ、`bin version`の最新版確認と更新方法の案内がnpm向けになる。
 
 ## 表示言語
 

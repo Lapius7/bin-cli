@@ -1,0 +1,39 @@
+#!/usr/bin/env node
+// OS/CPU 別パッケージのネイティブバイナリを起動するシム。
+// Linux/macOS では初回の起動時にこのファイル自体をネイティブバイナリで置き換え、次回からは node を経由しない。
+// （npm 11 はインストールスクリプトが既定で動かないため postinstall は使わない）
+'use strict';
+const fs = require('fs');
+const { spawnSync } = require('child_process');
+
+const pkg = `@lapius/bin-cli-${process.platform}-${process.arch}`;
+const exe = 'bin' + (process.platform === 'win32' ? '.exe' : '');
+let bin;
+try {
+  bin = require.resolve(`${pkg}/bin/${exe}`);
+} catch {
+  console.error(`bin: ${pkg} が見つかりません（未対応の環境か、optionalDependencies が省略されました）`);
+  console.error('  npm i -g @lapius/bin-cli で入れ直してください');
+  process.exit(1);
+}
+
+// Windows は npm が node 経由の .cmd を作るので置き換えない
+if (process.platform !== 'win32') {
+  try {
+    const self = fs.realpathSync(__filename);
+    const tmp = `${self}.${process.pid}.tmp`;
+    fs.copyFileSync(bin, tmp);
+    fs.chmodSync(tmp, 0o755);
+    fs.renameSync(tmp, self);
+  } catch {
+    // 書き込めなければシムのまま動く
+  }
+}
+
+const r = spawnSync(bin, process.argv.slice(2), { stdio: 'inherit' });
+if (r.error) {
+  console.error(`bin: ${bin} を起動できません: ${r.error.message}`);
+  process.exit(1);
+}
+if (r.signal) process.kill(process.pid, r.signal);
+process.exit(r.status ?? 1);
