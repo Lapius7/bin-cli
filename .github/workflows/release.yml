@@ -1,0 +1,35 @@
+# v* タグの push で npm に公開し、GitHub Release にバイナリを添付する
+#   git tag v0.1.0 && git push origin v0.1.0
+# npm 側の Trusted Publisher（~/sh/npm-trust.sh で設定）で OIDC 認証する。トークンは不要。
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@latest # OIDC での公開には npm 11.5.1 以降が必要
+      - run: go vet ./... && go test ./...
+      - run: node npm/build.mjs "${GITHUB_REF_NAME#v}" --publish
+      - name: GitHub Release にバイナリを添付
+        run: |
+          cd dist/npm
+          for d in *-*/; do d=${d%/}; tar -czf "bin-$d.tar.gz" -C "$d/bin" .; done
+          gh release create "$GITHUB_REF_NAME" --generate-notes bin-*.tar.gz
+        env:
+          GH_TOKEN: ${{ github.token }}

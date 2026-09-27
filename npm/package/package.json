@@ -1,0 +1,28 @@
+{
+  "name": "@lapius/bin-cli",
+  "version": "0.0.0",
+  "description": "bin.lapius7.com（LapBin）の CLI クライアント",
+  "keywords": ["cli", "gist", "pastebin", "lapbin"],
+  "homepage": "https://github.com/Lapius7/bin-cli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lapius7/bin-cli.git"
+  },
+  "license": "MIT",
+  "bin": {
+    "bin": "bin/bin"
+  },
+  "files": [
+    "bin/bin"
+  ],
+  "os": [
+    "linux",
+    "darwin",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "optionalDependencies": {}
+}
