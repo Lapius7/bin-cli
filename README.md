@@ -53,6 +53,27 @@ bin sync                    # pull してから、手元の変更があれば pu
 
 git でも取得できる(読み取り専用): `git clone https://bin.lapius7.com/<id>.git`。非公開のGistはパスワードにAPIトークン。
 
+### git と同じ操作感で使う(`bin g`)
+
+`bin g <gitのサブコマンド>` で、git とほぼ同じ引数・出力のまま Gist を扱える(既存の `bin status` などはそのまま)。
+origin=Gist、ブランチは `main` だけ。コミットは手元(`.lapbin/`)に貯まり、`push` の時に1コミット=1リビジョンとして保存される。
+
+```bash
+bin g clone https://bin.lapius7.com/<id>.git && cd <id>
+bin g status -sb
+bin g add -A && bin g commit -m "fix"     # -am、--amend(未pushのみ)、-m なしでエディタも可
+bin g log --oneline --stat -5             # Gistのリビジョンもコミットとして並ぶ
+bin g diff --cached / bin g diff HEAD~2 --stat / bin g show HEAD:main.py
+bin g pull                                # 未pushのコミットはGist側の変更の上に積み直す
+bin g push                                # Gist側が先に進んでいたら拒否(-f で上書き)
+
+bin g init my-snippets && cd my-snippets  # 新規: 最初の push で限定公開のGistを作成(--public/--private)
+```
+
+対応: `init clone status add rm mv restore checkout switch reset commit log show diff fetch pull push remote branch stash rev-parse ls-files clean`。
+`git config` の alias(例: `alias.st=status` → `bin g st`)、`-C <dir>`、`--no-pager`、ページャ(`GIT_PAGER`/`PAGER`)、ルートの `.gitignore` にも対応。
+merge・rebase・tag などGistに無い概念は使えない(Gistのタグは `bin tag`)。
+
 ### APIトークン(CI・スクリプト用)
 
 ```bash
