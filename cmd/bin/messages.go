@@ -284,4 +284,8 @@ var messages = map[string][2]string{
 	"複数のトークンに一致します。IDをもう少し長く指定してください":                           {"Matches more than one token. Give a longer ID", "여러 토큰과 일치합니다. ID를 조금 더 길게 지정하세요"},
 	"読み取り専用": {"read-only", "읽기 전용"},
 	"読み書き":   {"read/write", "읽기/쓰기"},
+	// ---- 作者表示・lapacks の案内(--help / --version) ----
+	"作者: Lapius (https://github.com/Lapius7)":                 {"Author: Lapius (https://github.com/Lapius7)", "제작자: Lapius (https://github.com/Lapius7)"},
+	"@lapius のツール: lapacks で一覧・インストール・更新":                     {"More @lapius tools: run lapacks to list, install and update them", "@lapius 도구: lapacks 로 목록・설치・업데이트"},
+	"@lapius のツール: npm i -g @lapius/lapacks で一覧・インストール・更新を管理": {"More @lapius tools: npm i -g @lapius/lapacks to list, install and update them", "@lapius 도구: npm i -g @lapius/lapacks 로 목록・설치・업데이트 관리"},
 }

@@ -76,8 +76,10 @@ func main() {
 		cmdGit(args)
 	case "version", "--version", "-v":
 		cmdVersion()
+		fmt.Fprint(os.Stderr, lapiusFooter()) // 標準出力は「bin <バージョン>」の1行のまま
 	case "-h", "--help", "help":
 		printUsage()
+		fmt.Print("\n" + lapiusFooter())
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n", os.Args[1])
 		printUsage()
