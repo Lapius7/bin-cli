@@ -70,7 +70,7 @@ var gistIDPattern = regexp.MustCompile(`^[0-9a-f]{16}$`)
 
 // parseGistID は「ID」「https://bin.lapius7.com/<id>」「.../raw/<id>/...」のどれでも受け付ける。
 func parseGistID(s string) (string, error) {
-	s = strings.TrimSpace(s)
+	s = strings.TrimSuffix(strings.TrimSpace(s), ".git")
 	if i := strings.Index(s, "://"); i >= 0 {
 		s = s[i+3:]
 		parts := strings.Split(s, "/")

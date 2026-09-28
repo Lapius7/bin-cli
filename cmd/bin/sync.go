@@ -58,6 +58,9 @@ func findSyncDir(start string) (string, syncMeta) {
 		data, err := os.ReadFile(filepath.Join(dir, syncMetaFile))
 		if err == nil {
 			var m syncMeta
+			if err := json.Unmarshal(data, &m); err == nil && m.ID == "" {
+				fail(errors.New(T("まだGistと紐付いていません(bin g push で作成するか、bin g remote add origin <id> で紐付けてください)")))
+			}
 			if err := json.Unmarshal(data, &m); err != nil || !gistIDPattern.MatchString(m.ID) {
 				fail(fmt.Errorf(T("%s を読み込めません"), filepath.Join(dir, syncMetaFile)))
 			}

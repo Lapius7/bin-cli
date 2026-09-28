@@ -18,7 +18,7 @@ const maxFileBytes = 1024 * 1024
 // ディレクトリを読み込む時に丸ごと飛ばすもの(Web版と同じ一覧)
 var ignoredDirs = map[string]bool{
 	".git": true, "node_modules": true, ".next": true, "dist": true, "build": true,
-	"__pycache__": true, ".venv": true, "venv": true, "target": true, ".idea": true, ".vscode": true,
+	"__pycache__": true, ".venv": true, "venv": true, "target": true, ".idea": true, ".vscode": true, gitStateDir: true,
 }
 
 func validateGistPath(p string) error {

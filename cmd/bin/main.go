@@ -72,6 +72,8 @@ func main() {
 		cmdTag(args)
 	case "token", "tokens":
 		cmdToken(args)
+	case "g", "git":
+		cmdGit(args)
 	case "version", "--version", "-v":
 		cmdVersion()
 	case "-h", "--help", "help":
@@ -116,6 +118,12 @@ func printUsage() {
 		{"bin sync [-m <message>]", T("pull してから、手元の変更があれば push する")},
 		{"bin run <id> [-f <file>] [-- <args>]", T("Gistのスクリプトを実行する(実行前に内容を表示して確認。-yで省略)")},
 		{"git clone " + defaultSiteURL + "/<id>.git", T("git でも取得できる(読み取り専用。非公開はパスワードにAPIトークン)")},
+	})
+	printUsageSection(T("git 互換(bin g)"), [][2]string{
+		{"bin g clone <id> / bin g init", T("git と同じ使い方で操作する(origin=Gist、ブランチは main)")},
+		{"bin g status / add / commit / push", T("ステージ・コミットは手元に貯め、push で1コミット=1リビジョンとして保存")},
+		{"bin g log / diff / show / pull / fetch", T("オプションも git とほぼ同じ(--oneline, -p, --stat, --cached など)")},
+		{"bin g help", T("対応しているサブコマンドの一覧")},
 	})
 	printUsageSection(T("APIトークン(CI・スクリプト用)"), [][2]string{
 		{"bin token create <name> [--read]", T("APIトークンを発行する(--expires <日数> で期限付き)")},
