@@ -8,5 +8,5 @@ func lapiusFooter() string {
 	if _, err := exec.LookPath("lapacks"); err == nil {
 		return s + T("@lapius のツール: lapacks で一覧・インストール・更新") + "\n"
 	}
-	return s + T("@lapius のツール: npm i -g @lapius/lapacks で一覧・インストール・更新を管理") + "\n"
+	return s + T("@lapius のツール: pnpm add -g @lapius/lapacks で一覧・インストール・更新を管理") + "\n"
 }

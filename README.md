@@ -7,7 +7,7 @@
 npm(Linux / macOS / Windows):
 
 ```bash
-npm i -g @lapius/bin-cli
+pnpm add -g @lapius/bin-cli
 ```
 
 OS/CPUに合ったビルド済みバイナリが入る(Linux/macOSでは初回の起動時にnodeのシムがネイティブバイナリに置き換わり、以後はnodeを経由しない)。更新は同じコマンドで行う。

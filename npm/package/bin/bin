@@ -13,7 +13,7 @@ try {
   bin = require.resolve(`${pkg}/bin/${exe}`);
 } catch {
   console.error(`bin: ${pkg} が見つかりません（未対応の環境か、optionalDependencies が省略されました）`);
-  console.error('  npm i -g @lapius/bin-cli で入れ直してください');
+  console.error('  pnpm add -g @lapius/bin-cli で入れ直してください');
   process.exit(1);
 }
 

@@ -287,5 +287,5 @@ var messages = map[string][2]string{
 	// ---- 作者表示・lapacks の案内(--help / --version) ----
 	"作者: Lapius (https://github.com/Lapius7)":                 {"Author: Lapius (https://github.com/Lapius7)", "제작자: Lapius (https://github.com/Lapius7)"},
 	"@lapius のツール: lapacks で一覧・インストール・更新":                     {"More @lapius tools: run lapacks to list, install and update them", "@lapius 도구: lapacks 로 목록・설치・업데이트"},
-	"@lapius のツール: npm i -g @lapius/lapacks で一覧・インストール・更新を管理": {"More @lapius tools: npm i -g @lapius/lapacks to list, install and update them", "@lapius 도구: npm i -g @lapius/lapacks 로 목록・설치・업데이트 관리"},
+	"@lapius のツール: pnpm add -g @lapius/lapacks で一覧・インストール・更新を管理": {"More @lapius tools: pnpm add -g @lapius/lapacks to list, install and update them", "@lapius 도구: pnpm add -g @lapius/lapacks 로 목록・설치・업데이트 관리"},
 }
