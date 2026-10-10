@@ -20,6 +20,8 @@ try {
 // Windows は npm が node 経由の .cmd を作るので置き換えない
 if (process.platform !== 'win32') {
   try {
+    // npm は bin をシンボリックリンクで置くので置き換えてよい。pnpm は node で起動するシムを作るため、置き換えると壊れる
+    if (!fs.lstatSync(process.argv[1]).isSymbolicLink()) throw new Error('not a symlink');
     const self = fs.realpathSync(__filename);
     const tmp = `${self}.${process.pid}.tmp`;
     fs.copyFileSync(bin, tmp);
