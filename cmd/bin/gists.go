@@ -186,6 +186,7 @@ func listGists(cfg Config, session *Session, f listFilter, limit, offset int) ([
 }
 
 func saveGist(cfg Config, session *Session, id *string, title, description, visibility string, files []GistFile, message string) (string, error) {
+	warnSecrets(files)
 	body, err := rpc(cfg, session, "save_gist", map[string]any{
 		"p_message":     message,
 		"p_id":          id,

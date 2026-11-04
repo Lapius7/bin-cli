@@ -54,6 +54,12 @@ bin create dir/ --exclude "*.log"          # --include / --exclude / .binignore 
 bin patch <id> a.js --replace @init --text "..."  # 行番号の代わりに @関数名 や /開始/,/終了/ も指定可
 bin star <id> / bin starred               # スター・スターしたGistの一覧
 bin tag <id> python cli                     # タグを設定(bin list --tag python で絞り込み)
+bin tags                                    # 自分のタグ一覧(-u <handle> で他人)
+bin scan [<file|dir>... | <id>]             # Token・秘密鍵の混入チェック(見つかれば終了コード1。保存時にも警告)
+bin comment list|add|edit|rm ...            # コメント(add は -f <file> --line 5-7 で行コメント)
+bin collection list|show|create|add|remove|delete ...  # コレクション
+bin stats <id> [--days 30]                  # 閲覧・ダウンロード数(自分のGistのみ)
+bin forks <id>                              # フォーク一覧
 bin run <id>                                # スクリプトを実行(実行前に内容を表示して確認)
 bin version                                 # バージョン表示。配布中の最新版かどうかも確かめる
 ```

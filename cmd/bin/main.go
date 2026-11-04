@@ -104,8 +104,20 @@ func main() {
 		cmdStar(args, false)
 	case "starred", "stars":
 		cmdStarred(args)
-	case "tag", "tags":
+	case "tag":
 		cmdTag(args)
+	case "tags":
+		cmdTags(args)
+	case "scan", "check":
+		cmdScan(args)
+	case "comment", "comments":
+		cmdComment(args)
+	case "collection", "col":
+		cmdCollection(args)
+	case "stats":
+		cmdStats(args)
+	case "forks":
+		cmdForks(args)
 	case "token", "tokens":
 		cmdToken(args)
 	case "g", "git":
