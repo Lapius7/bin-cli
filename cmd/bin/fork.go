@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 )
 
 // forkGist はフォークする。overrides に p_title / p_description / p_visibility を入れるとその値で作る(無ければ元と同じ)
@@ -65,10 +64,10 @@ func cmdFork(args []string) {
 	for i, f := range src.Files {
 		names[i] = f.Filename
 	}
-	fmt.Fprintf(os.Stderr, Tn("%s 「%s」をフォークしました(%s・%dファイル)\n", len(src.Files)), green("✓"), gistTitle(src.Title, names), visibilityLabel(visibility), len(src.Files))
-	if src.Owner.ID == userIDFromToken(session.AccessToken) {
-		fmt.Fprintln(os.Stderr, dim("  "+T("元のGistはそのまま残ります。")))
-	}
-	fmt.Fprintf(os.Stderr, "  %s %s\n", dim(T("手元で編集:")), cyan("bin clone "+newID))
-	fmt.Println(gistURL(cfg, newID))
+	doneCard(T("フォークしました"), []cardRow{
+		{T("元"), gistTitle(src.Title, names)},
+		{T("公開範囲"), visibilityLabel(visibility)},
+		{T("ファイル"), filesLabel(len(src.Files))},
+		{T("手元で編集"), cyan("bin clone " + newID)},
+	}, gistURL(cfg, newID))
 }

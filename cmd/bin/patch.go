@@ -253,9 +253,9 @@ func cmdPatch(args []string) {
 	if creating {
 		summary = T("新規作成: ") + summary
 	}
-	fmt.Fprintf(os.Stderr, "%s: %s(%d → %d 行)\n", name, summary, total, len(result))
 	if p.bools["dry"] {
-		fmt.Fprint(os.Stderr, T("--dry-run のため保存していません\n"))
+		fmt.Fprintf(os.Stderr, "%s %s\n  %s  %s\n  %s  %d → %d\n", yellow("◌"), bold(T("プレビュー(保存しません)")), dim(T("ファイル")), name, dim(T("行数")), total, len(result))
+		fmt.Fprintf(os.Stderr, "  %s  %s\n", dim(T("変更")), summary)
 		return
 	}
 	files[idx].Content = newContent
@@ -266,6 +266,13 @@ func cmdPatch(args []string) {
 	if _, err := saveGist(cfg, session, &g.ID, g.Title, g.Description, g.Visibility, files, message); err != nil {
 		fail(err)
 	}
-	fmt.Fprintf(os.Stderr, T("%s 更新しました\n"), green("✓"))
-	fmt.Println(gistURL(cfg, g.ID))
+	title := T("更新しました")
+	if creating {
+		title = T("作成しました")
+	}
+	doneCard(title, []cardRow{
+		{T("ファイル"), name},
+		{T("変更"), summary},
+		{T("行数"), fmt.Sprintf("%d → %d", total, len(result))},
+	}, gistURL(cfg, g.ID))
 }

@@ -89,10 +89,12 @@ func parseGistID(s string) (string, error) {
 
 // rpc はbinスキーマのDB関数を呼ぶ。未ログインで呼べる関数(get_gist等)はsessionがnilでもよい。
 func rpc(cfg Config, session *Session, fn string, args map[string]any) ([]byte, error) {
-	if session == nil {
-		return anonRequest(cfg, http.MethodPost, "/rest/v1/rpc/"+fn, "bin", args)
-	}
-	return restRequest(cfg, session, http.MethodPost, "/rest/v1/rpc/"+fn, "bin", args)
+	return withSpinner(T("通信中…"), func() ([]byte, error) {
+		if session == nil {
+			return anonRequest(cfg, http.MethodPost, "/rest/v1/rpc/"+fn, "bin", args)
+		}
+		return restRequest(cfg, session, http.MethodPost, "/rest/v1/rpc/"+fn, "bin", args)
+	})
 }
 
 // describeDBError はDB関数がraiseするエラーコード(save_gist等)を日本語の説明に置き換える。
@@ -216,11 +218,11 @@ func gistTitle(title string, files []string) string {
 func visibilityLabel(v string) string {
 	switch v {
 	case "public":
-		return green(T("公開"))
+		return green("● " + T("公開"))
 	case "unlisted":
-		return yellow(T("限定公開"))
+		return yellow("● " + T("限定公開"))
 	case "private":
-		return red(T("非公開"))
+		return red("● " + T("非公開"))
 	}
 	return v
 }

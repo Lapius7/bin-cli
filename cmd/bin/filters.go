@@ -155,7 +155,7 @@ func printGistTable(label string, notes []string, items []GistSummary, total int
 		if len(g.Tags) > 0 {
 			extra += formatTags(g.Tags)
 		}
-		fmt.Fprintf(w, "  %s\t%s%s\t%s\t%s\t%s\t%s\n", cyan(g.ID), owner, bold(gistTitle(g.Title, names)), visibilityLabel(g.Visibility), dim(fmt.Sprintf(Tn("%dファイル", len(g.Files)), len(g.Files))), dim(formatDate(g.UpdatedAt)), extra)
+		fmt.Fprintf(w, "  %s\t%s%s\t%s\t%s\t%s\t%s\n", cyan(g.ID), owner, bold(gistTitle(g.Title, names)), visibilityLabel(g.Visibility), dim(fmt.Sprintf(Tn("%dファイル", len(g.Files)), len(g.Files))), dim(relTime(g.UpdatedAt)), extra)
 		if g.Match != nil {
 			fmt.Fprintf(w, "  \t%s\n", dim(fmt.Sprintf("↳ %s:%d  ", g.Match.Filename, g.Match.Line))+strings.TrimSpace(g.Match.Text))
 		}

@@ -368,8 +368,15 @@ func cmdCreate(args []string) {
 		fail(err)
 	}
 	// URLだけを標準出力に出す(`url=$(bin create x.go)` のように使えるように)。装飾はstderrへ
-	fmt.Fprintf(os.Stderr, Tn("%s 作成しました(%s・%dファイル)\n", len(files)), green("✓"), visibilityLabel(visibility), len(files))
-	fmt.Println(gistURL(cfg, id))
+	names := make([]string, len(files))
+	for i, f := range files {
+		names[i] = f.Filename
+	}
+	doneCard(T("作成しました"), []cardRow{
+		{T("タイトル"), gistTitle(title, names)},
+		{T("公開範囲"), visibilityLabel(visibility)},
+		{T("ファイル"), fileList(names)},
+	}, gistURL(cfg, id))
 }
 
 func cmdList(args []string) {
@@ -584,8 +591,18 @@ func cmdEdit(args []string) {
 	if _, err := saveGist(cfg, session, &g.ID, title, description, visibility, files, message); err != nil {
 		fail(err)
 	}
-	fmt.Fprintf(os.Stderr, T("%s 更新しました\n"), green("✓"))
-	fmt.Println(gistURL(cfg, g.ID))
+	var changed []string
+	for _, u := range updates {
+		changed = append(changed, u.Filename)
+	}
+	rows := []cardRow{{T("タイトル"), gistTitle(title, nil)}, {T("公開範囲"), visibilityLabel(visibility)}}
+	if len(changed) > 0 {
+		rows = append(rows, cardRow{T("更新・追加"), fileList(changed)})
+	}
+	if len(removes) > 0 {
+		rows = append(rows, cardRow{T("削除"), fileList(removes)})
+	}
+	doneCard(T("更新しました"), rows, gistURL(cfg, g.ID))
 }
 
 func cmdDelete(args []string) {
@@ -662,4 +679,12 @@ func cmdClone(args []string) {
 func stdinIsTerminal() bool {
 	info, err := os.Stdin.Stat()
 	return err == nil && info.Mode()&os.ModeCharDevice != 0
+}
+
+// fileList はファイル名を並べる(多い時は先頭だけ)
+func fileList(names []string) string {
+	if len(names) <= 3 {
+		return strings.Join(names, ", ")
+	}
+	return strings.Join(names[:3], ", ") + dim(fmt.Sprintf(" …+%d", len(names)-3))
 }
