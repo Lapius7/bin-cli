@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 	"time"
 )
 
@@ -127,41 +125,92 @@ func filterFromArgs(p parsedArgs) (listFilter, []string, int) {
 }
 
 func printGistTable(label string, notes []string, items []GistSummary, total int, showOwner bool) {
+	head := bold(label)
 	if len(notes) > 0 {
-		label += dim(" (" + strings.Join(notes, " · ") + ")")
+		head += dim("  ·  " + strings.Join(notes, " · "))
 	}
 	if len(items) == 0 {
-		fmt.Println(bold(label))
+		fmt.Println(head)
 		fmt.Println(dim(T("  該当するGistはありません。")))
 		return
 	}
-	fmt.Println(bold(fmt.Sprintf(T("%s %d件"), label, total)))
-	w := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
-	for _, g := range items {
+	fmt.Println(head + "  " + dim(fmt.Sprintf(T("%d件"), total)))
+	fmt.Println()
+
+	// 列幅は表示幅(全角=2)で揃える。端末が狭いときはタイトルを省略して1行に収める
+	width := termWidth()
+	titles := make([]string, len(items))
+	owners := make([]string, len(items))
+	maxTitle, maxOwner := 0, 0
+	for i, g := range items {
 		names := make([]string, len(g.Files))
-		for i, f := range g.Files {
-			names[i] = f.Filename
+		for j, f := range g.Files {
+			names[j] = f.Filename
 		}
-		owner := ""
+		titles[i] = gistTitle(g.Title, names)
+		if w := displayWidth(titles[i]); w > maxTitle {
+			maxTitle = w
+		}
 		if showOwner && g.Owner.Handle != nil {
-			owner = dim("@"+*g.Owner.Handle) + "\t"
-		} else if showOwner {
-			owner = "\t"
+			owners[i] = "@" + *g.Owner.Handle
 		}
-		extra := ""
-		if g.StarCount > 0 {
-			extra += yellow(fmt.Sprintf("★%d", g.StarCount)) + " "
-		}
-		if len(g.Tags) > 0 {
-			extra += formatTags(g.Tags)
-		}
-		fmt.Fprintf(w, "  %s\t%s%s\t%s\t%s\t%s\t%s\n", cyan(g.ID), owner, bold(gistTitle(g.Title, names)), visibilityLabel(g.Visibility), dim(fmt.Sprintf(Tn("%dファイル", len(g.Files)), len(g.Files))), dim(relTime(g.UpdatedAt)), extra)
-		if g.Match != nil {
-			fmt.Fprintf(w, "  \t%s\n", dim(fmt.Sprintf("↳ %s:%d  ", g.Match.Filename, g.Match.Line))+strings.TrimSpace(g.Match.Text))
+		if w := displayWidth(owners[i]); w > maxOwner {
+			maxOwner = w
 		}
 	}
-	w.Flush()
+	const idW = 16
+	visW, filesW, timeW := 0, 0, 0
+	filesText := make([]string, len(items))
+	timeText := make([]string, len(items))
+	for i, g := range items {
+		filesText[i] = fmt.Sprintf(Tn("%dファイル", len(g.Files)), len(g.Files))
+		timeText[i] = relTime(g.UpdatedAt)
+		if w := displayWidth("● " + visibilityName(g.Visibility)); w > visW {
+			visW = w
+		}
+		if w := displayWidth(filesText[i]); w > filesW {
+			filesW = w
+		}
+		if w := displayWidth(timeText[i]); w > timeW {
+			timeW = w
+		}
+	}
+	ownerCol := 0
+	if showOwner {
+		ownerCol = maxOwner + 2
+	}
+	fixed := 2 + idW + 2 + ownerCol + 2 + visW + 2 + filesW + 2 + timeW
+	titleW := maxTitle
+	if avail := width - fixed - 12; avail < titleW {
+		titleW = avail
+	}
+	if titleW < 12 {
+		titleW = 12
+	}
+	for i, g := range items {
+		var line strings.Builder
+		line.WriteString("  " + cyan(g.ID) + "  ")
+		if showOwner {
+			line.WriteString(dim(padRight(owners[i], maxOwner)) + "  ")
+		}
+		line.WriteString(bold(padRight(truncateWidth(titles[i], titleW), titleW)) + "  ")
+		line.WriteString(padRight(visibilityLabel(g.Visibility), visW) + "  ")
+		line.WriteString(dim(padRight(filesText[i], filesW)) + "  ")
+		line.WriteString(dim(padRight(timeText[i], timeW)))
+		if g.StarCount > 0 {
+			line.WriteString("  " + yellow(fmt.Sprintf("★%d", g.StarCount)))
+		}
+		if len(g.Tags) > 0 {
+			line.WriteString("  " + formatTags(g.Tags))
+		}
+		fmt.Println(line.String())
+		if g.Match != nil {
+			text := truncateWidth(strings.TrimSpace(g.Match.Text), width-idW-8-displayWidth(fmt.Sprintf("%s:%d", g.Match.Filename, g.Match.Line)))
+			fmt.Println("  " + spaces(idW) + "  " + dim("↳ "+g.Match.Filename+":"+fmt.Sprint(g.Match.Line)) + "  " + text)
+		}
+	}
 	if total > len(items) {
+		fmt.Println()
 		fmt.Println(dim(fmt.Sprintf(T("  ...他%d件(--limit で件数を指定)"), total-len(items))))
 	}
 }

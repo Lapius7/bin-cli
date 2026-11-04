@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 // colorEnabled はNO_COLOR環境変数やTTY判定に基づき、色付き出力を使うかどうかを決める
@@ -187,4 +190,55 @@ func confirm(format string, args ...interface{}) bool {
 	line, _ := reader.ReadString('\n')
 	answer := strings.ToLower(strings.TrimSpace(line))
 	return answer == "y" || answer == "yes"
+}
+
+// ansiPattern は色・リンクの制御列。表示幅の計算では無視する
+var ansiPattern = regexp.MustCompile(`\x1b\[[0-9;]*m|\x1b\]8;;[^\x1b\x07]*(?:\x1b\\|\x07)`)
+
+func visibleWidth(s string) int { return displayWidth(ansiPattern.ReplaceAllString(s, "")) }
+
+// padRight は色付きの文字列でも見た目の幅で右側を空白で埋める
+func padRight(s string, target int) string {
+	if w := visibleWidth(s); w < target {
+		return s + spaces(target-w)
+	}
+	return s
+}
+
+// truncateWidth は表示幅が max を超えるとき「…」で切る(色のない文字列用)
+func truncateWidth(s string, max int) string {
+	if max <= 1 || displayWidth(s) <= max {
+		return s
+	}
+	w := 0
+	var b strings.Builder
+	for _, r := range s {
+		rw := displayWidth(string(r))
+		if w+rw > max-1 {
+			break
+		}
+		b.WriteRune(r)
+		w += rw
+	}
+	return b.String() + "…"
+}
+
+// termWidth は標準出力の端末の桁数(取れなければ 100)
+func termWidth() int {
+	if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && w > 20 {
+		return w
+	}
+	return 100
+}
+
+func visibilityName(v string) string {
+	switch v {
+	case "public":
+		return T("公開")
+	case "unlisted":
+		return T("限定公開")
+	case "private":
+		return T("非公開")
+	}
+	return v
 }
