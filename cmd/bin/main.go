@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/term"
 	"io"
 	"net/http"
 	"net/url"
@@ -577,12 +578,37 @@ func cmdView(args []string) {
 	if g.ForkCount > 0 {
 		fmt.Println(dim(fmt.Sprintf(Tn("フォーク %d件", g.ForkCount), g.ForkCount) + " · " + gistURL(cfg, g.ID) + "/forks"))
 	}
+	tty := term.IsTerminal(int(os.Stdout.Fd()))
 	for _, f := range g.Files {
-		fmt.Printf("\n%s %s\n", cyan("──"), bold(f.Filename))
+		fmt.Println()
+		if tty {
+			printFileBody(f)
+			continue
+		}
+		fmt.Printf("%s %s\n", cyan("──"), bold(f.Filename))
 		fmt.Print(f.Content)
 		if !strings.HasSuffix(f.Content, "\n") {
 			fmt.Println()
 		}
+	}
+}
+
+// printFileBody は端末向けに、罫線つきのファイル見出しと行番号つきの本文を出す
+func printFileBody(f GistFile) {
+	lines := strings.Split(strings.TrimSuffix(f.Content, "\n"), "\n")
+	if f.Content == "" {
+		lines = nil
+	}
+	meta := fmt.Sprintf(Tn("%d行", len(lines)), len(lines)) + " · " + formatSize(int64(len(f.Content)))
+	head := cyan("──") + " " + bold(f.Filename) + " "
+	fill := termWidth() - 4 - displayWidth(f.Filename) - displayWidth(meta) - 2
+	if fill < 2 {
+		fill = 2
+	}
+	fmt.Println(head + dim(strings.Repeat("─", fill)+" "+meta))
+	gw := len(fmt.Sprint(len(lines)))
+	for i, l := range lines {
+		fmt.Printf("%s %s %s\n", dim(fmt.Sprintf("%*d", gw, i+1)), dim("│"), l)
 	}
 }
 

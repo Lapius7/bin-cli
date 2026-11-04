@@ -194,7 +194,7 @@ func cmdToken(args []string) {
 		if err := json.Unmarshal(body, &t); err != nil {
 			fail(err)
 		}
-		fmt.Fprintf(os.Stderr, "%s %s\n", green("✓"), fmt.Sprintf(T("APIトークン「%s」を発行しました(%s)"), t.Name, scopeLabel(t.Scope)))
+		fmt.Fprintf(os.Stderr, "%s %s\n", green("✔"), fmt.Sprintf(T("APIトークン「%s」を発行しました(%s)"), t.Name, scopeLabel(t.Scope)))
 		fmt.Fprintln(os.Stderr, yellow("!")+" "+T("このトークンは今しか表示されません。安全な場所に保存してください"))
 		fmt.Fprintln(os.Stderr, dim("  "+T("使い方: BIN_TOKEN=<トークン> bin list / curl -H \"Authorization: Bearer <トークン>\" …")))
 		// トークン自体は標準出力へ(`token=$(bin token create ci)` のように受け取れるように)

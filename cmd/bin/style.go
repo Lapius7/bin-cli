@@ -102,7 +102,15 @@ func printField(label, value string) {
 		fmt.Printf("  %s %s\n", spaces(labelWidth), value)
 		return
 	}
-	fmt.Printf("  %s %s\n", dim(padLabel(label, labelWidth)), value)
+	fmt.Printf("  %s %s\n", dim(padLabel(label, labelWidth)), clipValue(value))
+}
+
+// clipValue は長い値(data: URL など)が端末で折り返して崩れないよう、幅に収める(色付きの値はそのまま)
+func clipValue(v string) string {
+	if strings.Contains(v, "\x1b") {
+		return v
+	}
+	return truncateWidth(v, termWidth()-labelWidth-4)
 }
 
 const labelWidth = 17
@@ -144,7 +152,7 @@ func providerBadge(provider string) string {
 }
 
 func success(format string, args ...interface{}) {
-	fmt.Printf("%s %s\n", green("✓"), fmt.Sprintf(format, args...))
+	fmt.Printf("%s %s\n", green("✔"), fmt.Sprintf(format, args...))
 }
 
 func warn(format string, args ...interface{}) {

@@ -238,12 +238,20 @@ func printRecent(cfg Config, st *gistStats) {
 	}
 	fmt.Println()
 	sectionTitle("🕘", T("最近更新したGist"))
-	for _, g := range st.recent {
+	titles := make([]string, len(st.recent))
+	tw := 0
+	for i, g := range st.recent {
 		names := make([]string, len(g.Files))
-		for i, f := range g.Files {
-			names[i] = f.Filename
+		for j, f := range g.Files {
+			names[j] = f.Filename
 		}
-		fmt.Printf("  %s  %s  %s  %s\n", cyan(g.ID), bold(gistTitle(g.Title, names)), visibilityLabel(g.Visibility), dim(formatDate(g.UpdatedAt)))
+		titles[i] = truncateWidth(gistTitle(g.Title, names), 28)
+		if w := displayWidth(titles[i]); w > tw {
+			tw = w
+		}
+	}
+	for i, g := range st.recent {
+		fmt.Printf("  %s  %s  %s  %s\n", cyan(g.ID), bold(padRight(titles[i], tw)), padRight(visibilityLabel(g.Visibility), 12), dim(formatDate(g.UpdatedAt)))
 	}
 }
 

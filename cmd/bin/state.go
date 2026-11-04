@@ -172,8 +172,16 @@ func cmdAlias(args []string) {
 			names = append(names, n)
 		}
 		sort.Strings(names)
+		nw := 0
 		for _, n := range names {
-			fmt.Printf("%s  %s\n", bold(n), dim(st.Aliases[n]))
+			if w := displayWidth(n); w > nw {
+				nw = w
+			}
+		}
+		fmt.Println(bold(T("エイリアス")) + "  " + dim(fmt.Sprintf(T("%d件"), len(names))))
+		fmt.Println()
+		for _, n := range names {
+			fmt.Printf("  %s  %s  %s\n", cyan(padRight(n, nw)), dim("→"), st.Aliases[n])
 		}
 		return
 	}

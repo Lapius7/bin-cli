@@ -34,7 +34,7 @@ func cmdVersion() {
 	}
 	switch {
 	case latest == version:
-		fmt.Fprintln(os.Stderr, green("✓ ")+T("最新版です"))
+		fmt.Fprintln(os.Stderr, green("✔ ")+T("最新版です"))
 	case version == "dev":
 		fmt.Fprintf(os.Stderr, dim(T("開発版です(配布中の最新版: %s)"))+"\n", latest)
 	default:
