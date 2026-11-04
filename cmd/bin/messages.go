@@ -4,6 +4,22 @@ package main
 // 値は {英語, 韓国語}。キーの文字列を変えたらここも合わせること(対応が無いと日本語のまま表示される)。
 // 語順が変わる場合は %[2]s のように引数の位置を指定する。
 var messages = map[string][2]string{
+	"ファイルの特定の行だけ追加・置換・削除する(--text・--from <ファイル>[:A-B]・`-`で本文を渡す)": {"Add, replace or delete specific lines of a file (body via --text, --from <file>[:A-B], or `-`)", ""},
+	// ---- bin patch ----
+	"%d 行目を削除": {"deleted line %d", ""},
+	"行の指定が正しくありません: %s(例: 5 または 3-7)":                          {"Invalid line spec: %s (e.g. 5 or 3-7)", ""},
+	"%s は %d 行しかありません":                                         {"%s has only %d lines", ""},
+	"操作は --append・--insert・--replace・--delete のうち1つだけ指定してください": {"Specify exactly one of --append, --insert, --replace, --delete", ""},
+	"追加する内容がありません(--text・--from・標準入力 `-` のどれかを指定してください)":       {"Nothing to add (use --text, --from, or `-` for stdin)", ""},
+	"末尾に %d 行追加": {"appended %d lines", ""},
+	"--insert は 1〜%d の行番号で指定してください(その行の手前に入ります)": {"--insert takes a line number from 1 to %d (text goes before that line)", ""},
+	"%d 行目の手前に %d 行追加":         {"inserted %[2]d lines before line %[1]d", ""},
+	"%s は %d 行しかありません(指定: %s)": {"%s has only %d lines (given: %s)", ""},
+	"置き換える内容がありません(--text・--from・標準入力 `-` のどれかを指定してください)": {"Nothing to replace with (use --text, --from, or `-` for stdin)", ""},
+	"%d〜%d 行目を削除":             {"deleted lines %d-%d", ""},
+	"%d〜%d 行目を %d 行に置換":       {"replaced lines %d-%d with %d lines", ""},
+	"変更内容がありません":              {"No changes", ""},
+	"--dry-run のため保存していません\n": {"--dry-run: nothing saved\n", ""},
 	// ---- 使い方(bin help) ----
 	"bin.lapius7.com CLIクライアント ": {"bin.lapius7.com CLI client ", "bin.lapius7.com CLI 클라이언트 "},
 	"認証":                         {"Authentication", "인증"},
@@ -285,7 +301,7 @@ var messages = map[string][2]string{
 	"読み取り専用": {"read-only", "읽기 전용"},
 	"読み書き":   {"read/write", "읽기/쓰기"},
 	// ---- 作者表示・lapacks の案内(--help / --version) ----
-	"作者: Lapius (https://github.com/Lapius7)":                 {"Author: Lapius (https://github.com/Lapius7)", "제작자: Lapius (https://github.com/Lapius7)"},
-	"@lapius のツール: lapacks で一覧・インストール・更新":                     {"More @lapius tools: run lapacks to list, install and update them", "@lapius 도구: lapacks 로 목록・설치・업데이트"},
+	"作者: Lapius (https://github.com/Lapius7)":                    {"Author: Lapius (https://github.com/Lapius7)", "제작자: Lapius (https://github.com/Lapius7)"},
+	"@lapius のツール: lapacks で一覧・インストール・更新":                        {"More @lapius tools: run lapacks to list, install and update them", "@lapius 도구: lapacks 로 목록・설치・업데이트"},
 	"@lapius のツール: pnpm add -g @lapius/lapacks で一覧・インストール・更新を管理": {"More @lapius tools: pnpm add -g @lapius/lapacks to list, install and update them", "@lapius 도구: pnpm add -g @lapius/lapacks 로 목록・설치・업데이트 관리"},
 }

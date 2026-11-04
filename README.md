@@ -30,6 +30,7 @@ cat build.log | bin create -f build.log --private
 bin list                                    # 自分のGist(-u <handle> で他人の公開Gist)
 bin view <id>                               # 表示(-f <file> で1ファイルだけ生出力)
 bin edit <id> main.go --remove old.go -t "新しいタイトル" --public
+bin patch <id> main.go --insert 3 --text "// 追加"   # 特定の行だけ追加(--append / --replace 4-6 / --delete 2-3、--from <ファイル>[:A-B]、`-`で標準入力)
 bin clone <id> [dir]                        # ファイルをダウンロード
 bin fork <id> -t "派生版"                     # コピーして自分の新しいGistを作る(自分のGistも可、公開範囲は元のまま)
 bin delete <id>                             # 削除(確認あり、-yで省略)

@@ -42,6 +42,8 @@ func main() {
 		cmdView(args)
 	case "edit":
 		cmdEdit(args)
+	case "patch":
+		cmdPatch(args)
 	case "fork":
 		cmdFork(args)
 	case "delete", "rm":
@@ -103,6 +105,7 @@ func printUsage() {
 		{"bin timeline", T("みんなの公開Gistを新しい順に表示する")},
 		{"bin view <id> [-f <file>]", T("内容を表示する(-fで1ファイルだけ生出力)")},
 		{"bin edit <id> [<file|dir>...]", T("ファイルを追加・上書きする(--remove <path>で削除)")},
+		{"bin patch <id> <file> --append|--insert N|--replace A-B|--delete A-B", T("ファイルの特定の行だけ追加・置換・削除する(--text・--from <ファイル>[:A-B]・`-`で本文を渡す)")},
 		{"bin clone <id> [<dir>]", T("Gistのファイルをフォルダ構成ごとダウンロードする")},
 		{"bin fork <id>", T("コピーして自分の新しいGistを作る(自分のGistも可。公開範囲は元のまま)")},
 		{"bin log <id> [-p]", T("変更履歴を git log 風に表示する(-pで差分も表示)")},
