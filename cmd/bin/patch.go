@@ -68,7 +68,7 @@ func patchText(p parsedArgs) []string {
 	for _, f := range p.values["from"] {
 		path, rng, hasRange := f, "", false
 		if i := strings.LastIndex(f, ":"); i > 0 {
-			if _, _, err := parseLineRange(f[i+1:]); err == nil {
+			if isRangeSpec(f[i+1:]) {
 				path, rng, hasRange = f[:i], f[i+1:], true
 			}
 		}
@@ -78,12 +78,9 @@ func patchText(p parsedArgs) []string {
 		}
 		lines := splitPatchLines(string(data))
 		if hasRange {
-			a, b, _ := parseLineRange(rng)
-			if b == openEnd {
-				b = len(lines)
-			}
-			if a > len(lines) || b > len(lines) {
-				fail(fmt.Errorf(T("%s は %d 行しかありません"), path, len(lines)))
+			a, b, err := resolveRangeSpec(rng, lines)
+			if err != nil {
+				fail(fmt.Errorf("%s: %w", path, err))
 			}
 			lines = lines[a-1 : b]
 		}
@@ -211,15 +208,9 @@ func cmdPatch(args []string) {
 		} else {
 			spec = p.values["replace"][0]
 		}
-		a, b, err := parseLineRange(spec)
+		a, b, err := resolveRangeSpec(spec, lines)
 		if err != nil {
-			fail(err)
-		}
-		if b == openEnd {
-			b = total
-		}
-		if a > total || b > total {
-			fail(fmt.Errorf(T("%s は %d 行しかありません(指定: %s)"), name, total, spec))
+			fail(fmt.Errorf("%s: %w", name, err))
 		}
 		if !isDelete && len(text) == 0 {
 			fail(fmt.Errorf(T("置き換える内容がありません(--text・--from・標準入力 `-` のどれかを指定してください)")))

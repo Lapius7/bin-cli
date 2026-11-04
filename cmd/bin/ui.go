@@ -113,7 +113,7 @@ var pendingChanges []fileChange
 // showChanges は保存前後のファイル一覧の差分を、次の doneCard で表示するよう登録する
 func showChanges(prev, next []GistFile) { pendingChanges = changesBetween(prev, next) }
 
-const maxDiffLines = 16
+var maxDiffLines = 16
 
 func printPendingChanges() {
 	cs := pendingChanges

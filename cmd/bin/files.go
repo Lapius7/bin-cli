@@ -52,7 +52,7 @@ func gistPathFor(local string) string {
 	return p
 }
 
-var localRangePattern = regexp.MustCompile(`^(.+):(\d+-\d*|-\d+|\d+)(?:=(.+))?$`)
+var localRangePattern = regexp.MustCompile(`^(.+):(\d+-\d*|-\d+|\d+|@[\w.$]+|/[^/]+/,/[^/]+/)(?:=(.+))?$`)
 
 type skipped struct{ path, reason string }
 
@@ -79,20 +79,14 @@ func collectPath(local string, out *[]GistFile, skips *[]skipped) {
 	// ローカルの行範囲指定: main.go:70-84 / main.go:70- / main.go:-20 / main.go:5 、末尾に =名前 でGist上の名前を指定
 	if m := localRangePattern.FindStringSubmatch(local); m != nil {
 		if _, err := os.Stat(local); err != nil {
-			a, b, err := parseLineRange(m[2])
-			if err != nil {
-				fail(err)
-			}
 			data, err := os.ReadFile(m[1])
 			if err != nil {
 				fail(fmt.Errorf(T("ファイルを読み込めません: %w"), err))
 			}
 			lines := splitPatchLines(string(data))
-			if b == openEnd {
-				b = len(lines)
-			}
-			if a > len(lines) || b > len(lines) {
-				fail(fmt.Errorf(T("%s は %d 行しかありません(指定: %s)"), m[1], len(lines), m[2]))
+			a, b, err := resolveRangeSpec(m[2], lines)
+			if err != nil {
+				fail(fmt.Errorf("%s: %w", m[1], err))
 			}
 			name := m[3]
 			if name == "" {
@@ -115,6 +109,7 @@ func collectPath(local string, out *[]GistFile, skips *[]skipped) {
 	if base == "." {
 		base = ""
 	}
+	ignore := loadIgnore(local)
 	_ = filepath.WalkDir(local, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
@@ -123,6 +118,14 @@ func collectPath(local string, out *[]GistFile, skips *[]skipped) {
 			if p != local && ignoredDirs[d.Name()] {
 				return filepath.SkipDir
 			}
+			if p != local {
+				if r, _ := filepath.Rel(local, p); ignore.matches(filepath.ToSlash(r), true) {
+					return filepath.SkipDir
+				}
+			}
+			return nil
+		}
+		if r, _ := filepath.Rel(local, p); ignore.matches(filepath.ToSlash(r), false) || !includeAllowed(d.Name(), filepath.ToSlash(r)) {
 			return nil
 		}
 		if !d.Type().IsRegular() {
@@ -225,8 +228,8 @@ func applyFileOpts(p parsedArgs, paths []string) []string {
 	out := append([]string(nil), paths...)
 	i := srcs[0]
 	if lines != "" {
-		if _, _, err := parseLineRange(lines); err != nil {
-			fail(err)
+		if !isRangeSpec(lines) {
+			fail(fmt.Errorf(T("行の指定が正しくありません: %s(例: %s)"), lines, rangeSpecHelp))
 		}
 		out[i] += ":" + lines
 	}
@@ -302,8 +305,8 @@ func foldFileOpts(args []string, skip int) []string {
 			e := pos[n]
 			s := e.val
 			if e.lines != "" {
-				if _, _, err := parseLineRange(e.lines); err != nil {
-					fail(err)
+				if !isRangeSpec(e.lines) {
+					fail(fmt.Errorf(T("行の指定が正しくありません: %s(例: %s)"), e.lines, rangeSpecHelp))
 				}
 				s += ":" + e.lines
 			}
@@ -320,4 +323,60 @@ func foldFileOpts(args []string, skip int) []string {
 		}
 	}
 	return out
+}
+
+// --include / --exclude(グロブ、複数可)。ディレクトリを渡したときの絞り込みに使う
+var includeGlobs, excludeGlobs []string
+
+func includeAllowed(name, rel string) bool {
+	if len(includeGlobs) == 0 {
+		return true
+	}
+	for _, g := range includeGlobs {
+		if ok, _ := filepath.Match(g, name); ok {
+			return true
+		}
+		if ok, _ := filepath.Match(g, rel); ok {
+			return true
+		}
+	}
+	return false
+}
+
+// ignoreSet は .binignore(.gitignore と同じ書き方の簡易版)と --exclude をまとめたもの
+type ignoreSet struct{ pats []string }
+
+func loadIgnore(dir string) ignoreSet {
+	s := ignoreSet{pats: append([]string(nil), excludeGlobs...)}
+	if data, err := os.ReadFile(filepath.Join(dir, ".binignore")); err == nil {
+		for _, l := range strings.Split(string(data), "\n") {
+			l = strings.TrimSpace(l)
+			if l != "" && !strings.HasPrefix(l, "#") {
+				s.pats = append(s.pats, l)
+			}
+		}
+	}
+	return s
+}
+
+func (s ignoreSet) matches(rel string, isDir bool) bool {
+	base := rel
+	if i := strings.LastIndex(rel, "/"); i >= 0 {
+		base = rel[i+1:]
+	}
+	for _, pat := range s.pats {
+		dirOnly := strings.HasSuffix(pat, "/")
+		pat = strings.TrimSuffix(strings.TrimPrefix(pat, "/"), "/")
+		if dirOnly && !isDir {
+			// ディレクトリ配下のファイルは、ディレクトリ側で SkipDir される
+			continue
+		}
+		if ok, _ := filepath.Match(pat, base); ok {
+			return true
+		}
+		if ok, _ := filepath.Match(pat, rel); ok {
+			return true
+		}
+	}
+	return false
 }

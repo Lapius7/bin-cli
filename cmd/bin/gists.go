@@ -71,6 +71,11 @@ var gistIDPattern = regexp.MustCompile(`^[0-9a-f]{16}$`)
 // parseGistID は「ID」「https://bin.lapius7.com/<id>」「.../raw/<id>/...」のどれでも受け付ける。
 func parseGistID(s string) (string, error) {
 	s = strings.TrimSuffix(strings.TrimSpace(s), ".git")
+	if id, ok, err := resolveIDShortcut(s); err != nil {
+		return "", err
+	} else if ok {
+		return id, nil
+	}
 	if i := strings.Index(s, "://"); i >= 0 {
 		s = s[i+3:]
 		parts := strings.Split(s, "/")
@@ -132,6 +137,7 @@ func getGist(cfg Config, session *Session, id string) (*Gist, error) {
 	if g == nil {
 		return nil, fmt.Errorf(T("Gistが見つかりません(存在しないか、非公開です)"))
 	}
+	rememberGist(g.ID)
 	return g, nil
 }
 
@@ -195,6 +201,7 @@ func saveGist(cfg Config, session *Session, id *string, title, description, visi
 	if err := json.Unmarshal(body, &newID); err != nil || newID == "" {
 		return "", fmt.Errorf(T("レスポンスの解析に失敗しました: %s"), string(body))
 	}
+	rememberGist(newID)
 	return newID, nil
 }
 

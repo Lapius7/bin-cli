@@ -36,24 +36,57 @@ func main() {
 		cmdUser(args)
 	case "create", "new":
 		cmdCreate(args)
+	case "diff":
+		cmdDiff(withDefaultID(args))
+	case "mv", "rename":
+		cmdMv(withDefaultID(args))
+	case "cp", "copy-file":
+		cmdCp(withDefaultID(args))
+	case "restore":
+		cmdRestore(withDefaultID(args), false)
+	case "undo":
+		cmdRestore(withDefaultID(args), true)
+	case "open":
+		cmdOpen(withDefaultID(args))
+	case "copy", "yank":
+		cmdCopy(withDefaultID(args))
+	case "share":
+		cmdShare(withDefaultID(args))
+	case "search", "find":
+		cmdSearch(args)
+	case "watch":
+		cmdWatch(withDefaultID(args))
+	case "alias", "aliases":
+		cmdAlias(args)
+	case "visibility", "vis":
+		cmdBulk("visibility", args)
+	case "bulk":
+		if len(args) == 0 {
+			usageExit("bin bulk <delete|visibility|tag|star|unstar> ...")
+		}
+		cmdBulk(args[0], args[1:])
 	case "list", "ls":
 		cmdList(args)
 	case "view", "cat", "show":
-		cmdView(args)
+		cmdView(withDefaultID(args))
 	case "edit":
-		cmdEdit(args)
+		cmdEdit(withDefaultID(args))
 	case "patch":
-		cmdPatch(args)
+		cmdPatch(withDefaultID(args))
 	case "fork":
 		cmdFork(args)
 	case "delete", "rm":
-		cmdDelete(args)
+		if isBulkArgs(args) {
+			cmdBulk("delete", args)
+		} else {
+			cmdDelete(args)
+		}
 	case "clone", "download":
 		cmdClone(args)
 	case "timeline", "tl":
 		cmdTimeline(args)
 	case "log", "history":
-		cmdLog(args)
+		cmdLog(withDefaultID(args))
 	case "status", "st":
 		cmdStatus(args)
 	case "pull":
@@ -110,6 +143,26 @@ func printUsage() {
 		{"bin fork <id>", T("コピーして自分の新しいGistを作る(自分のGistも可。公開範囲は元のまま)")},
 		{"bin log <id> [-p]", T("変更履歴を git log 風に表示する(-pで差分も表示)")},
 		{"bin delete <id>", T("削除する(確認あり、-yで省略)")},
+	})
+	printUsageSection(T("ファイル操作・差分"), [][2]string{
+		{"bin diff [<id>] [<file>...] [--rev N]", T("ローカルと Gist(または過去リビジョン)の差分を git 風に表示する")},
+		{"bin mv <id> <old> <new> / bin cp <id> <file> <new>", T("Gist 内のファイル名変更・コピー(--to <id> 別Gistへ、--new 新規Gistへ)")},
+		{"bin undo [<id>] / bin restore <id> <rev>", T("1つ前・指定リビジョン(番号・ハッシュ・~N)の内容に戻す(--dry-run あり)")},
+		{"bin watch [<id>] <file>", T("ファイルの保存ごとに自動で Gist へ反映する(Ctrl-C で終了)")},
+		{"bin edit [<id>] <file> --editor", T("$EDITOR で開き、保存した内容を反映する")},
+	})
+	printUsageSection(T("共有・便利機能"), [][2]string{
+		{"bin open / copy / share [<id>] [-f <file>]", T("ブラウザで開く・内容や URL をコピー・URL/埋め込み/QR を表示")},
+		{"bin search <text> [-l <lang>]", T("自分の Gist を本文まで全文検索する")},
+		{"bin alias set <name> <id>", T("エイリアスを登録する(以後 bin edit <name> のように指定できる)")},
+		{"bin create --clipboard [-f <name>]", T("クリップボードの内容から作成する")},
+		{"bin visibility <public|unlisted|private> <id>... / bin bulk <op>", T("複数 ID や絞り込み条件(-q -l --since --tag)にまとめて適用(delete・visibility・tag・star)")},
+	})
+	printUsageSection(T("省略・指定のしかた"), [][2]string{
+		{T("ID の省略"), T("ID を書かないと、このフォルダに紐付いた Gist、無ければ直前に使った Gist が対象になる(delete は除く)")},
+		{T("短縮 ID・エイリアス"), T("ID は 4 桁以上の先頭一致(使ったことのあるもの)や alias 名でも指定できる")},
+		{"--include / --exclude <glob>", T("フォルダを渡すときのファイル絞り込み(.binignore でも除外できる)")},
+		{"file:@name / file:/start/,/end/", T("行番号の代わりに、関数名や開始・終了パターンで範囲を指定する")},
 	})
 	printUsageSection(T("スター・タグ"), [][2]string{
 		{"bin star <id> / bin unstar <id>", T("スターを付ける・外す")},
@@ -216,7 +269,8 @@ var gistValueFlags = map[string]string{
 	"-t": "title", "--title": "title",
 	"-d": "description", "--description": "description",
 	"-f": "filename", "--filename": "filename", "--as": "filename",
-	"--lines":  "lines",
+	"--lines":   "lines",
+	"--include": "include", "--exclude": "exclude",
 	"--remove": "remove",
 	"-m":       "message", "--message": "message",
 }
@@ -350,10 +404,26 @@ func cmdLogin(args []string) {
 }
 
 func cmdCreate(args []string) {
-	p := parseArgs(foldFileOpts(args, 0), gistValueFlags, visibilityFlags)
+	p := parseArgs(foldFileOpts(args, 0), gistValueFlags, mergeBool(visibilityFlags, map[string]string{"--clipboard": "clipboard"}))
+	includeGlobs, excludeGlobs = p.values["include"], p.values["exclude"]
 	cfg, session := requireSession()
 	stdinName, _ := p.value("filename")
-	files := readInputFiles(applyFileOpts(p, p.positional), stdinName, false, true)
+	var files []GistFile
+	if p.bools["clipboard"] {
+		text, err := clipboardRead()
+		if err != nil {
+			fail(err)
+		}
+		if strings.TrimSpace(text) == "" {
+			fail(fmt.Errorf(T("クリップボードが空です")))
+		}
+		if stdinName == "" {
+			stdinName = "clipboard.txt"
+		}
+		files = append(files, GistFile{Filename: stdinName, Content: text})
+	} else {
+		files = readInputFiles(applyFileOpts(p, p.positional), stdinName, false, true)
+	}
 
 	visibility, ok := pickVisibility(p)
 	if !ok {
@@ -517,7 +587,8 @@ func cmdView(args []string) {
 }
 
 func cmdEdit(args []string) {
-	p := parseArgs(foldFileOpts(args, 1), gistValueFlags, visibilityFlags)
+	p := parseArgs(foldFileOpts(args, 1), gistValueFlags, mergeBool(visibilityFlags, map[string]string{"--editor": "editor"}))
+	includeGlobs, excludeGlobs = p.values["include"], p.values["exclude"]
 	if len(p.positional) < 1 {
 		usageExit("bin edit <id> [<file|dir>...] [--lines <A-B>] [--as <name>] [--remove <path>] [-m <message>] [-t <title>] [-d <description>] [--public|--unlisted|--private]")
 	}
@@ -543,6 +614,15 @@ func cmdEdit(args []string) {
 	updates := readInputFiles(applyFileOpts(p, paths), stdinName, true, false)
 	removes := p.values["remove"]
 
+	if p.bools["editor"] {
+		name, _ := p.value("filename")
+		if name == "" && len(p.positional) > 1 {
+			name = p.positional[1]
+		}
+		msg, _ := p.value("message")
+		editInEditor(cfg, session, g, name, msg)
+		return
+	}
 	prevFiles := append([]GistFile(nil), g.Files...)
 	files := g.Files
 	for _, u := range updates {
