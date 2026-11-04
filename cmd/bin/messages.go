@@ -5,8 +5,9 @@ package main
 // 語順が変わる場合は %[2]s のように引数の位置を指定する。
 var messages = map[string][2]string{
 	// ---- UI ----
-	"エイリアス": {"Aliases", "별칭"},
-	"%d行":   {"%d lines", "%d줄"},
+	"APIトークン": {"API tokens", "API 토큰"},
+	"エイリアス":   {"Aliases", "별칭"},
+	"%d行":     {"%d lines", "%d줄"},
 	"$EDITOR で開き、保存した内容を反映する":                   {"Open in $EDITOR and apply what you save", "$EDITOR 로 열고 저장한 내용을 반영합니다"},
 	"%d 件を対象に「%s」を行います":                         {"%d item(s) will be affected: %s", "%d개를 대상으로 「%s」 작업을 합니다"},
 	"%d 件完了、%d 件失敗":                             {"%d done, %d failed", "%d개 완료, %d개 실패"},

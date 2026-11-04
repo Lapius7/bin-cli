@@ -16,7 +16,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 )
 
 func cmdStar(args []string, on bool) {
@@ -213,22 +212,31 @@ func cmdToken(args []string) {
 			fmt.Println(dim(T("APIトークンはありません(bin token create <名前> で発行)")))
 			return
 		}
-		w := tabwriter.NewWriter(os.Stdout, 0, 2, 2, ' ', 0)
+		fmt.Println(rightAlign("  "+bold(T("APIトークン")), dim(fmt.Sprintf(T("%d件"), len(list)))))
+		fmt.Println(rule())
+		nameW, prefW := 0, 0
 		for _, t := range list {
-			last := T("未使用")
-			if t.LastUsedAt != nil {
-				last = fmt.Sprintf(T("最終使用 %s"), formatDate(*t.LastUsedAt))
+			if w := displayWidth(t.Name); w > nameW {
+				nameW = w
 			}
-			exp := T("無期限")
+			if w := displayWidth(t.Prefix) + 1; w > prefW {
+				prefW = w
+			}
+		}
+		for _, t := range list {
+			last := dim(T("未使用"))
+			if t.LastUsedAt != nil {
+				last = dim(fmt.Sprintf(T("最終使用 %s"), formatDate(*t.LastUsedAt)))
+			}
+			exp := dim(T("無期限"))
 			if t.ExpiresAt != nil {
-				exp = fmt.Sprintf(T("期限 %s"), formatDate(*t.ExpiresAt))
+				exp = dim(fmt.Sprintf(T("期限 %s"), formatDate(*t.ExpiresAt)))
 				if t.Expired {
 					exp = red(T("期限切れ"))
 				}
 			}
-			fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%s\t%s\n", dim(t.ID[:8]), bold(t.Name), cyan(t.Prefix+"…"), scopeLabel(t.Scope), dim(last), dim(exp))
+			fmt.Printf("  %s  %s  %s  %s  %s  %s\n", dim(t.ID[:8]), bold(padRight(t.Name, nameW)), cyan(padRight(t.Prefix+"…", prefW)), padRight(scopeLabel(t.Scope), 6), last, exp)
 		}
-		w.Flush()
 	case "revoke", "rm", "delete":
 		if len(args) != 2 {
 			usageExit("bin token revoke <id>")

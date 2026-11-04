@@ -124,6 +124,8 @@ func filterFromArgs(p parsedArgs) (listFilter, []string, int) {
 	return f, notes, limit
 }
 
+var matchQuery string
+
 func printGistTable(label string, notes []string, items []GistSummary, total int, showOwner bool) {
 	head := bold(label)
 	if len(notes) > 0 {
@@ -134,8 +136,8 @@ func printGistTable(label string, notes []string, items []GistSummary, total int
 		fmt.Println(dim(T("  該当するGistはありません。")))
 		return
 	}
-	fmt.Println(head + "  " + dim(fmt.Sprintf(T("%d件"), total)))
-	fmt.Println()
+	fmt.Println(rightAlign("  "+head, dim(fmt.Sprintf(T("%d件"), total))))
+	fmt.Println(rule())
 
 	// 列幅は表示幅(全角=2)で揃える。端末が狭いときはタイトルを省略して1行に収める
 	width := termWidth()
@@ -189,14 +191,15 @@ func printGistTable(label string, notes []string, items []GistSummary, total int
 	}
 	for i, g := range items {
 		var line strings.Builder
-		line.WriteString("  " + cyan(g.ID) + "  ")
+		line.WriteString("  ")
+		line.WriteString(padRight(visibilityLabel(g.Visibility), visW) + "  ")
 		if showOwner {
 			line.WriteString(dim(padRight(owners[i], maxOwner)) + "  ")
 		}
 		line.WriteString(bold(padRight(truncateWidth(titles[i], titleW), titleW)) + "  ")
-		line.WriteString(padRight(visibilityLabel(g.Visibility), visW) + "  ")
 		line.WriteString(dim(padRight(filesText[i], filesW)) + "  ")
-		line.WriteString(dim(padRight(timeText[i], timeW)))
+		line.WriteString(dim(padRight(timeText[i], timeW)) + "  ")
+		line.WriteString(dim(g.ID))
 		if g.StarCount > 0 {
 			line.WriteString("  " + yellow(fmt.Sprintf("★%d", g.StarCount)))
 		}
@@ -206,7 +209,10 @@ func printGistTable(label string, notes []string, items []GistSummary, total int
 		fmt.Println(line.String())
 		if g.Match != nil {
 			text := truncateWidth(strings.TrimSpace(g.Match.Text), width-idW-8-displayWidth(fmt.Sprintf("%s:%d", g.Match.Filename, g.Match.Line)))
-			fmt.Println("  " + spaces(idW) + "  " + dim("↳ "+g.Match.Filename+":"+fmt.Sprint(g.Match.Line)) + "  " + text)
+			fmt.Println("    " + dim("↳ "+g.Match.Filename+":"+fmt.Sprint(g.Match.Line)) + "  " + highlight(text, matchQuery))
+			if i < len(items)-1 {
+				fmt.Println()
+			}
 		}
 	}
 	if total > len(items) {
@@ -227,5 +233,6 @@ func cmdTimeline(args []string) {
 	if err != nil {
 		fail(err)
 	}
+	matchQuery = f.Query
 	printGistTable(T("タイムライン"), notes, items, total, true)
 }

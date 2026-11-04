@@ -299,8 +299,9 @@ func cmdLog(args []string) {
 		if i == 0 {
 			latest = " " + cyan(T("(最新)"))
 		}
-		fmt.Printf("%s %s %s%s  %s %s  %s\n", yellow("●"), yellow(revisionHash(id, r.Revision)), msg, latest,
-			green(fmt.Sprintf("+%d", add)), red(fmt.Sprintf("-%d", del)), dim(t.Format("15:04")))
+		fmt.Println(rightAlign(
+			fmt.Sprintf("%s %s  %s %s%s", yellow("●"), yellow(revisionHash(id, r.Revision)), dim(t.Format("15:04")), msg, latest),
+			green(fmt.Sprintf("+%d", add))+" "+red(fmt.Sprintf("-%d", del))))
 
 		for _, m := range meta {
 			fmt.Printf("  %s %s\n", dim("│"), m)

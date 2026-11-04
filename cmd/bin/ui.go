@@ -133,7 +133,7 @@ func printPendingChanges() {
 		case T("削除"):
 			mark = red("D")
 		}
-		fmt.Fprintf(os.Stderr, "  %s %s  %s %s\n", mark, bold(c.name), green(fmt.Sprintf("+%d", c.add)), red(fmt.Sprintf("-%d", c.del)))
+		fmt.Fprintln(os.Stderr, rightAlign("  "+mark+" "+bold(c.name), green(fmt.Sprintf("+%d", c.add))+" "+red(fmt.Sprintf("-%d", c.del))))
 		shown := 0
 		skipped := 0
 		for _, op := range c.ops {

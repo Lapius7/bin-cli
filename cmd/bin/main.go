@@ -479,6 +479,7 @@ func cmdList(args []string) {
 		fmt.Println(dim(fmt.Sprintf(T("Gistがありません。%s で作成できます。"), cyan("`bin create <file>`"))))
 		return
 	}
+	matchQuery = f.Query
 	printGistTable(label, notes, items, total, false)
 }
 

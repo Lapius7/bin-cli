@@ -250,3 +250,28 @@ func visibilityName(v string) string {
 	}
 	return v
 }
+
+// rightAlign は左右の文字列を端末の右端に寄せて1行にする(収まらないときは間を2つ空けるだけ)
+func rightAlign(left, right string) string {
+	gap := termWidth() - visibleWidth(left) - visibleWidth(right) - 2
+	if gap < 2 {
+		gap = 2
+	}
+	return left + spaces(gap) + right
+}
+
+// rule は薄い横線(端末幅から左右の余白を引いた長さ)
+func rule() string { return dim("  " + strings.Repeat("─", termWidth()-4)) }
+
+// highlight は text の中の query(大文字小文字を区別しない)を強調する
+func highlight(text, query string) string {
+	if query == "" {
+		return text
+	}
+	lt, lq := strings.ToLower(text), strings.ToLower(query)
+	i := strings.Index(lt, lq)
+	if i < 0 || len(lt) != len(text) {
+		return text
+	}
+	return text[:i] + bold(yellow(text[i:i+len(query)])) + text[i+len(query):]
+}
