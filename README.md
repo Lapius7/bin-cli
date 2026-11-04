@@ -38,6 +38,20 @@ bin create main.go:70-84 / bin edit <id> main.go:70-=part.js   # ローカルの
 bin clone <id> [dir]                        # ファイルをダウンロード
 bin fork <id> -t "派生版"                     # コピーして自分の新しいGistを作る(自分のGistも可、公開範囲は元のまま)
 bin delete <id>                             # 削除(確認あり、-yで省略)
+bin delete <id1> <id2> -y                  # 複数まとめて削除(--tag / -q / --since で絞り込みも可、--dry-run で確認のみ)
+bin diff [<id>] [file]                     # ローカルと Gist の差分(--rev ~1 で過去版と比較)
+bin mv <id> old.js new.js                  # ファイル名変更
+bin cp <id> a.js b.js                      # コピー(--to <id> / --new で別 Gist へ)
+bin undo [<id>] / bin restore <id> ~2      # 直前の変更を取り消す / 過去のリビジョンへ戻す(--dry-run あり)
+bin open|copy|share [<id>]                 # ブラウザで開く / クリップボードへ / URL・埋め込み・QR を表示
+bin search <text>                          # 自分の Gist を全文検索
+bin watch <id> main.js                     # 保存するたびに自動反映
+bin alias set blog <id>                    # 短い名前を付ける(以降 bin edit blog …)
+bin visibility private --tag draft         # 公開範囲を一括変更 / bin bulk tag --add x
+bin edit <id> --editor                     # $EDITOR で編集して反映
+bin create --clipboard -f note.txt         # クリップボードから作成
+bin create dir/ --exclude "*.log"          # --include / --exclude / .binignore で絞り込み
+bin patch <id> a.js --replace @init --text "..."  # 行番号の代わりに @関数名 や /開始/,/終了/ も指定可
 bin star <id> / bin starred               # スター・スターしたGistの一覧
 bin tag <id> python cli                     # タグを設定(bin list --tag python で絞り込み)
 bin run <id>                                # スクリプトを実行(実行前に内容を表示して確認)
