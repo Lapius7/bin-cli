@@ -323,7 +323,7 @@ func optionalSession() (Config, *Session) {
 
 // userIDFromToken はアクセストークン(JWT)のsubを取り出す(署名検証はサーバー側で行われる)。
 func userIDFromToken(token string) string {
-	if strings.HasPrefix(token, "lbt_") {
+	if strings.HasPrefix(token, "sbt_") || strings.HasPrefix(token, "lbt_") {
 		return tokenOwner(loadConfig(), token)
 	}
 	parts := strings.Split(token, ".")

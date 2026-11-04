@@ -6,7 +6,7 @@ package main
 //   bin tag <id> [<tag>...] [--clear]
 //   bin token create <name> [--read] [--expires <days>] / bin token list / bin token revoke <id|prefix>
 //
-// APIトークン(lbt_...)は環境変数 BIN_TOKEN に入れると、bin login の代わりに使える(CI・スクリプト向け)。
+// APIトークン(sbt_...)は環境変数 BIN_TOKEN に入れると、bin login の代わりに使える(CI・スクリプト向け)。
 
 import (
 	"encoding/json"

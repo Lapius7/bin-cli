@@ -97,7 +97,7 @@ merge・rebase・tag などGistに無い概念は使えない(Gistのタグは `
 
 ```bash
 bin token create ci --expires 90     # 発行(トークンは標準出力にだけ出る。--read で読み取り専用)
-BIN_TOKEN=lbt_… bin list            # bin login の代わりに使う
+BIN_TOKEN=sbt_… bin list            # bin login の代わりに使う
 bin token list / bin token revoke <id>
 ```
 
