@@ -85,6 +85,7 @@ func doneCard(title string, rows []cardRow, url string) {
 	for _, r := range rows {
 		fmt.Fprintf(os.Stderr, "  %s  %s\n", dim(padLabel(r.label, w)), r.value)
 	}
+	printPendingChanges()
 	if url != "" {
 		if stdoutIsTerminal() {
 			fmt.Fprintf(os.Stderr, "  %s  %s\n", dim(padLabel("URL", w)), hyperlink(url, cyan(url)))
@@ -104,4 +105,59 @@ func hyperlink(url, text string) string {
 
 func filesLabel(n int) string {
 	return fmt.Sprintf(Tn("%dファイル", n), n)
+}
+
+// pendingChanges は次の doneCard が結果カードの下に git 風の差分として表示する
+var pendingChanges []fileChange
+
+// showChanges は保存前後のファイル一覧の差分を、次の doneCard で表示するよう登録する
+func showChanges(prev, next []GistFile) { pendingChanges = changesBetween(prev, next) }
+
+const maxDiffLines = 16
+
+func printPendingChanges() {
+	cs := pendingChanges
+	pendingChanges = nil
+	if len(cs) == 0 {
+		return
+	}
+	fmt.Fprintln(os.Stderr)
+	totalAdd, totalDel := 0, 0
+	for _, c := range cs {
+		totalAdd += c.add
+		totalDel += c.del
+		mark := yellow("M")
+		switch c.status {
+		case T("追加"):
+			mark = green("A")
+		case T("削除"):
+			mark = red("D")
+		}
+		fmt.Fprintf(os.Stderr, "  %s %s  %s %s\n", mark, bold(c.name), green(fmt.Sprintf("+%d", c.add)), red(fmt.Sprintf("-%d", c.del)))
+		shown := 0
+		skipped := 0
+		for _, op := range c.ops {
+			if op.kind == ' ' {
+				continue
+			}
+			if shown >= maxDiffLines {
+				skipped++
+				continue
+			}
+			shown++
+			text := op.text
+			if displayWidth(text) > 100 {
+				text = string([]rune(text)[:50]) + "…"
+			}
+			if op.kind == '+' {
+				fmt.Fprintf(os.Stderr, "    %s\n", green("+ "+text))
+			} else {
+				fmt.Fprintf(os.Stderr, "    %s\n", red("- "+text))
+			}
+		}
+		if skipped > 0 {
+			fmt.Fprintf(os.Stderr, "    %s\n", dim(fmt.Sprintf(T("…他 %d 行"), skipped)))
+		}
+	}
+	fmt.Fprintf(os.Stderr, "  %s\n\n", dim(fmt.Sprintf(T("%d ファイル変更、%d 行追加(+)、%d 行削除(-)"), len(cs), totalAdd, totalDel)))
 }

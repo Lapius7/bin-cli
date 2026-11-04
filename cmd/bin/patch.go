@@ -256,8 +256,13 @@ func cmdPatch(args []string) {
 	if p.bools["dry"] {
 		fmt.Fprintf(os.Stderr, "%s %s\n  %s  %s\n  %s  %d → %d\n", yellow("◌"), bold(T("プレビュー(保存しません)")), dim(T("ファイル")), name, dim(T("行数")), total, len(result))
 		fmt.Fprintf(os.Stderr, "  %s  %s\n", dim(T("変更")), summary)
+		next := append([]GistFile(nil), files...)
+		next[idx].Content = newContent
+		showChanges(files, next)
+		printPendingChanges()
 		return
 	}
+	prevFiles := append([]GistFile(nil), files...)
 	files[idx].Content = newContent
 	message, _ := p.value("message")
 	if message == "" {
@@ -266,6 +271,7 @@ func cmdPatch(args []string) {
 	if _, err := saveGist(cfg, session, &g.ID, g.Title, g.Description, g.Visibility, files, message); err != nil {
 		fail(err)
 	}
+	showChanges(prevFiles, files)
 	title := T("更新しました")
 	if creating {
 		title = T("作成しました")

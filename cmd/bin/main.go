@@ -543,6 +543,7 @@ func cmdEdit(args []string) {
 	updates := readInputFiles(applyFileOpts(p, paths), stdinName, true, false)
 	removes := p.values["remove"]
 
+	prevFiles := append([]GistFile(nil), g.Files...)
 	files := g.Files
 	for _, u := range updates {
 		replaced := false
@@ -592,6 +593,7 @@ func cmdEdit(args []string) {
 	if _, err := saveGist(cfg, session, &g.ID, title, description, visibility, files, message); err != nil {
 		fail(err)
 	}
+	showChanges(prevFiles, files)
 	var changed []string
 	for _, u := range updates {
 		changed = append(changed, u.Filename)
