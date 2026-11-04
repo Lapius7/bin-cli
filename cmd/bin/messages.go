@@ -4,8 +4,12 @@ package main
 // 値は {英語, 韓国語}。キーの文字列を変えたらここも合わせること(対応が無いと日本語のまま表示される)。
 // 語順が変わる場合は %[2]s のように引数の位置を指定する。
 var messages = map[string][2]string{
-	"ファイルの特定の行だけ追加・置換・削除する(--text・--from <ファイル>[:A-B]・`-`で本文を渡す)": {"Add, replace or delete specific lines of a file (body via --text, --from <file>[:A-B], or `-`)", ""},
+	"ファイルの特定の行だけ追加・置換・削除する(無いファイルは新規作成)(--text・--from <ファイル>[:A-B]・`-`で本文を渡す)": {"Add, replace or delete specific lines of a file (body via --text, --from <file>[:A-B], or `-`)", ""},
 	// ---- bin patch ----
+	"%d 行目を %d 行に置換": {"replaced line %d with %d lines", ""},
+	"%s に「%s」を含む行がありません": {"No line in %s contains \"%s\"", ""},
+	"新規作成: ": {"created: ", ""},
+	"行の指定が正しくありません: %s(例: 5・3-7・70-・-20)": {"Invalid line spec: %s (e.g. 5, 3-7, 70-, -20)", ""},
 	"%d 行目を削除": {"deleted line %d", ""},
 	"行の指定が正しくありません: %s(例: 5 または 3-7)":                          {"Invalid line spec: %s (e.g. 5 or 3-7)", ""},
 	"%s は %d 行しかありません":                                         {"%s has only %d lines", ""},

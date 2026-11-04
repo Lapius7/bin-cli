@@ -30,7 +30,9 @@ cat build.log | bin create -f build.log --private
 bin list                                    # 自分のGist(-u <handle> で他人の公開Gist)
 bin view <id>                               # 表示(-f <file> で1ファイルだけ生出力)
 bin edit <id> main.go --remove old.go -t "新しいタイトル" --public
-bin patch <id> main.go --insert 3 --text "// 追加"   # 特定の行だけ追加(--append / --replace 4-6 / --delete 2-3、--from <ファイル>[:A-B]、`-`で標準入力)
+bin patch <id> main.go --insert 3 --text "// 追加"   # 特定の行だけ追加(--append / --replace 4-6 / --delete 2-3 / --after "文字列" / --before "文字列")
+bin patch <id> new.js --append --from main.go:70-84  # 無いファイルは追加系なら新規作成。本文は --text・--from <ファイル>[:A-B]・`-`(標準入力)
+bin create main.go:70-84 / bin edit <id> main.go:70-=part.js   # ローカルの行範囲だけ送る(70- は末尾まで、-20 は先頭から、=名前でGist上の名前)
 bin clone <id> [dir]                        # ファイルをダウンロード
 bin fork <id> -t "派生版"                     # コピーして自分の新しいGistを作る(自分のGistも可、公開範囲は元のまま)
 bin delete <id>                             # 削除(確認あり、-yで省略)

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 )
@@ -51,6 +52,8 @@ func gistPathFor(local string) string {
 	return p
 }
 
+var localRangePattern = regexp.MustCompile(`^(.+):(\d+-\d*|-\d+|\d+)(?:=(.+))?$`)
+
 type skipped struct{ path, reason string }
 
 func readLocalFile(localPath, gistPath string, out *[]GistFile, skips *[]skipped) {
@@ -73,6 +76,33 @@ func readLocalFile(localPath, gistPath string, out *[]GistFile, skips *[]skipped
 // ディレクトリ「src」を渡すと src/main.go のようにディレクトリ名から始まるパスになる
 // (「.」を渡した場合はカレントディレクトリ直下からの相対パス)。
 func collectPath(local string, out *[]GistFile, skips *[]skipped) {
+	// ローカルの行範囲指定: main.go:70-84 / main.go:70- / main.go:-20 / main.go:5 、末尾に =名前 でGist上の名前を指定
+	if m := localRangePattern.FindStringSubmatch(local); m != nil {
+		if _, err := os.Stat(local); err != nil {
+			a, b, err := parseLineRange(m[2])
+			if err != nil {
+				fail(err)
+			}
+			data, err := os.ReadFile(m[1])
+			if err != nil {
+				fail(fmt.Errorf(T("ファイルを読み込めません: %w"), err))
+			}
+			lines := splitPatchLines(string(data))
+			if b == openEnd {
+				b = len(lines)
+			}
+			if a > len(lines) || b > len(lines) {
+				fail(fmt.Errorf(T("%s は %d 行しかありません(指定: %s)"), m[1], len(lines), m[2]))
+			}
+			name := m[3]
+			if name == "" {
+				name = gistPathFor(m[1])
+			}
+			content := strings.Join(lines[a-1:b], "\n") + "\n"
+			*out = append(*out, GistFile{Filename: name, Content: content})
+			return
+		}
+	}
 	info, err := os.Stat(local)
 	if err != nil {
 		fail(fmt.Errorf(T("ファイルを読み込めません: %w"), err))

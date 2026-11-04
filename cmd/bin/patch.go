@@ -9,7 +9,7 @@ import (
 )
 
 var patchValueFlags = map[string]string{
-	"--insert": "insert", "--replace": "replace", "--delete": "delete",
+	"--insert": "insert", "--after": "after", "--before": "before", "--replace": "replace", "--delete": "delete",
 	"--text": "text", "--from": "from",
 	"-m": "message", "--message": "message",
 }
@@ -18,18 +18,34 @@ var patchBoolFlags = map[string]string{
 	"--append": "append", "--dry-run": "dry",
 }
 
-// parseLineRange は "5" や "3-7"(1始まり、両端を含む)を (開始, 終了) にする
+const openEnd = int(^uint(0) >> 1)
+
+// parseLineRange は "5"・"3-7"・"70-"(末尾まで)・"-20"(先頭から)を (開始, 終了) にする(1始まり、両端を含む)。
+// 末尾までの指定は終了が openEnd になる
 func parseLineRange(s string) (int, int, error) {
+	bad := fmt.Errorf(T("行の指定が正しくありません: %s(例: 5・3-7・70-・-20)"), s)
 	a, b, hasEnd := strings.Cut(s, "-")
-	start, err := strconv.Atoi(strings.TrimSpace(a))
-	if err != nil || start < 1 {
-		return 0, 0, fmt.Errorf(T("行の指定が正しくありません: %s(例: 5 または 3-7)"), s)
+	start := 1
+	if strings.TrimSpace(a) != "" || !hasEnd {
+		n, err := strconv.Atoi(strings.TrimSpace(a))
+		if err != nil || n < 1 {
+			return 0, 0, bad
+		}
+		start = n
 	}
 	end := start
 	if hasEnd {
-		end, err = strconv.Atoi(strings.TrimSpace(b))
-		if err != nil || end < start {
-			return 0, 0, fmt.Errorf(T("行の指定が正しくありません: %s(例: 5 または 3-7)"), s)
+		if strings.TrimSpace(b) == "" {
+			if strings.TrimSpace(a) == "" {
+				return 0, 0, bad
+			}
+			end = openEnd
+		} else {
+			n, err := strconv.Atoi(strings.TrimSpace(b))
+			if err != nil || n < start {
+				return 0, 0, bad
+			}
+			end = n
 		}
 	}
 	return start, end, nil
@@ -63,7 +79,10 @@ func patchText(p parsedArgs) []string {
 		lines := splitPatchLines(string(data))
 		if hasRange {
 			a, b, _ := parseLineRange(rng)
-			if b > len(lines) {
+			if b == openEnd {
+				b = len(lines)
+			}
+			if a > len(lines) || b > len(lines) {
 				fail(fmt.Errorf(T("%s は %d 行しかありません"), path, len(lines)))
 			}
 			lines = lines[a-1 : b]
@@ -83,12 +102,12 @@ func patchText(p parsedArgs) []string {
 // cmdPatch は Gist の1ファイルに対して、行単位で追加・置換・削除する
 func cmdPatch(args []string) {
 	p := parseArgs(args, patchValueFlags, patchBoolFlags)
-	usage := "bin patch <id> <file> (--append | --insert <行> | --replace <行[-行]> | --delete <行[-行]>) [--text <文字列>]... [--from <ローカルファイル>[:行[-行]]] [-] [-m <message>] [--dry-run]"
+	usage := "bin patch <id> <file> (--append | --insert <行> | --after <文字列> | --before <文字列> | --replace <行[-行]> | --delete <行[-行]>) [--text <文字列>]... [--from <ローカルファイル>[:行[-行]]] [-] [-m <message>] [--dry-run]"
 	if len(p.positional) < 2 {
 		usageExit(usage)
 	}
 	ops := 0
-	for _, k := range []string{"insert", "replace", "delete"} {
+	for _, k := range []string{"insert", "replace", "delete", "after", "before"} {
 		if len(p.values[k]) > 0 {
 			ops++
 		}
@@ -97,7 +116,7 @@ func cmdPatch(args []string) {
 		ops++
 	}
 	if ops != 1 {
-		fail(fmt.Errorf(T("操作は --append・--insert・--replace・--delete のうち1つだけ指定してください")))
+		fail(fmt.Errorf(T("操作は --append・--insert・--after・--before・--replace・--delete のうち1つだけ指定してください")))
 	}
 	id, err := parseGistID(p.positional[0])
 	if err != nil {
@@ -119,8 +138,19 @@ func cmdPatch(args []string) {
 			idx = i
 		}
 	}
+	creating := false
 	if idx < 0 {
-		fail(fmt.Errorf(T("%s というファイルはありません"), name))
+		// 無いファイルは、追加系(--append・--insert 1)のときだけ新規作成する
+		if p.bools["append"] || (len(p.values["insert"]) > 0 && p.values["insert"][0] == "1") {
+			creating = true
+			files = append(files, GistFile{Filename: name})
+			idx = len(files) - 1
+			if err := validateGistPath(name); err != nil {
+				fail(err)
+			}
+		} else {
+			fail(fmt.Errorf(T("%s というファイルはありません"), name))
+		}
 	}
 	lines := splitPatchLines(files[idx].Content)
 	total := len(lines)
@@ -147,6 +177,33 @@ func cmdPatch(args []string) {
 		result = append(result, text...)
 		result = append(result, lines[n-1:]...)
 		summary = fmt.Sprintf(T("%d 行目の手前に %d 行追加"), n, len(text))
+	case len(p.values["after"]) > 0, len(p.values["before"]) > 0:
+		key, after := "before", false
+		if len(p.values["after"]) > 0 {
+			key, after = "after", true
+		}
+		pat := p.values[key][0]
+		at := -1
+		for i, l := range lines {
+			if strings.Contains(l, pat) {
+				at = i
+				break
+			}
+		}
+		if at < 0 {
+			fail(fmt.Errorf(T("%s に「%s」を含む行がありません"), name, pat))
+		}
+		if len(text) == 0 {
+			fail(fmt.Errorf(T("追加する内容がありません(--text・--from・標準入力 `-` のどれかを指定してください)")))
+		}
+		pos := at
+		if after {
+			pos = at + 1
+		}
+		result = append(result, lines[:pos]...)
+		result = append(result, text...)
+		result = append(result, lines[pos:]...)
+		summary = fmt.Sprintf(T("%d 行目の手前に %d 行追加"), pos+1, len(text))
 	case len(p.values["replace"]) > 0, len(p.values["delete"]) > 0:
 		spec, isDelete := "", len(p.values["delete"]) > 0
 		if isDelete {
@@ -158,7 +215,10 @@ func cmdPatch(args []string) {
 		if err != nil {
 			fail(err)
 		}
-		if b > total {
+		if b == openEnd {
+			b = total
+		}
+		if a > total || b > total {
 			fail(fmt.Errorf(T("%s は %d 行しかありません(指定: %s)"), name, total, spec))
 		}
 		if !isDelete && len(text) == 0 {
@@ -177,6 +237,9 @@ func cmdPatch(args []string) {
 			}
 		} else {
 			summary = fmt.Sprintf(T("%d〜%d 行目を %d 行に置換"), a, b, len(text))
+			if a == b {
+				summary = fmt.Sprintf(T("%d 行目を %d 行に置換"), a, len(text))
+			}
 		}
 	}
 
@@ -186,6 +249,9 @@ func cmdPatch(args []string) {
 	}
 	if newContent == files[idx].Content {
 		fail(fmt.Errorf(T("変更内容がありません")))
+	}
+	if creating {
+		summary = T("新規作成: ") + summary
 	}
 	fmt.Fprintf(os.Stderr, "%s: %s(%d → %d 行)\n", name, summary, total, len(result))
 	if p.bools["dry"] {
