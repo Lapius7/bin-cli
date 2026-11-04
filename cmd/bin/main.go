@@ -215,7 +215,8 @@ func (p parsedArgs) value(key string) (string, bool) {
 var gistValueFlags = map[string]string{
 	"-t": "title", "--title": "title",
 	"-d": "description", "--description": "description",
-	"-f": "filename", "--filename": "filename",
+	"-f": "filename", "--filename": "filename", "--as": "filename",
+	"--lines":  "lines",
 	"--remove": "remove",
 	"-m":       "message", "--message": "message",
 }
@@ -352,7 +353,7 @@ func cmdCreate(args []string) {
 	p := parseArgs(args, gistValueFlags, visibilityFlags)
 	cfg, session := requireSession()
 	stdinName, _ := p.value("filename")
-	files := readInputFiles(p.positional, stdinName, false, true)
+	files := readInputFiles(applyFileOpts(p, p.positional), stdinName, false, true)
 
 	visibility, ok := pickVisibility(p)
 	if !ok {
@@ -518,7 +519,7 @@ func cmdView(args []string) {
 func cmdEdit(args []string) {
 	p := parseArgs(args, gistValueFlags, visibilityFlags)
 	if len(p.positional) < 1 {
-		usageExit("bin edit <id> [<file|dir>...] [--remove <path>] [-m <message>] [-t <title>] [-d <description>] [--public|--unlisted|--private]")
+		usageExit("bin edit <id> [<file|dir>...] [--lines <A-B>] [--as <name>] [--remove <path>] [-m <message>] [-t <title>] [-d <description>] [--public|--unlisted|--private]")
 	}
 	id, err := parseGistID(p.positional[0])
 	if err != nil {
@@ -539,7 +540,7 @@ func cmdEdit(args []string) {
 	if stdinName != "" && len(paths) == 0 {
 		paths = []string{"-"}
 	}
-	updates := readInputFiles(paths, stdinName, true, false)
+	updates := readInputFiles(applyFileOpts(p, paths), stdinName, true, false)
 	removes := p.values["remove"]
 
 	files := g.Files

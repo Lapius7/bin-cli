@@ -153,8 +153,30 @@ func step(format string, args ...interface{}) {
 }
 
 func fail(err error) {
-	fmt.Fprintf(os.Stderr, "%s %s\n", red("✗"), err)
+	msg := err.Error()
+	fmt.Fprintf(os.Stderr, "%s %s\n", red("✖"), bold(msg))
+	if h := errorHint(msg); h != "" {
+		fmt.Fprintf(os.Stderr, "  %s %s\n", dim("→"), dim(h))
+	}
 	os.Exit(1)
+}
+
+// errorHint はよくあるエラーに対する次の一手を返す(無ければ空)
+func errorHint(msg string) string {
+	l := strings.ToLower(msg)
+	switch {
+	case strings.Contains(msg, "ログイン") || strings.Contains(l, "unauthorized") || strings.Contains(l, "not logged in") || strings.Contains(l, "401"):
+		return T("bin login でログインしてください(CIなら BIN_TOKEN を設定)")
+	case strings.Contains(msg, "行しかありません"):
+		return T("行番号は 1 始まりです。wc -l で行数を確認してください")
+	case strings.Contains(msg, "ファイルを読み込めません"):
+		return T("パスが正しいか、ファイルが存在するか確認してください(パスに : や = を含む場合は --lines / --as を使う)")
+	case strings.Contains(msg, "見つかりません") || strings.Contains(l, "not found") || strings.Contains(l, "404"):
+		return T("ID が正しいか確認してください(bin list で自分のGistを一覧)")
+	case strings.Contains(l, "no such host") || strings.Contains(l, "connection") || strings.Contains(l, "timeout"):
+		return T("ネットワークに接続できません。接続を確認して再実行してください")
+	}
+	return ""
 }
 
 // confirm はy/nの確認プロンプトを表示し、"y"/"yes"(大文字小文字を無視)の場合のみtrueを返す。

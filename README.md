@@ -31,6 +31,7 @@ bin list                                    # 自分のGist(-u <handle> で他�
 bin view <id>                               # 表示(-f <file> で1ファイルだけ生出力)
 bin edit <id> main.go --remove old.go -t "新しいタイトル" --public
 bin patch <id> main.go --insert 3 --text "// 追加"   # 特定の行だけ追加(--append / --replace 4-6 / --delete 2-3 / --after "文字列" / --before "文字列")
+bin edit <id> js/script.js --lines 70-82 --as script.js  # 行範囲とGist上の名前は別オプションでも指定できる(file:A-B=名前 と同じ)
 bin patch <id> new.js --append --from main.go:70-84  # 無いファイルは追加系なら新規作成。本文は --text・--from <ファイル>[:A-B]・`-`(標準入力)
 bin create main.go:70-84 / bin edit <id> main.go:70-=part.js   # ローカルの行範囲だけ送る(70- は末尾まで、-20 は先頭から、=名前でGist上の名前)
 bin clone <id> [dir]                        # ファイルをダウンロード

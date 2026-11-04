@@ -5,6 +5,12 @@ package main
 // 語順が変わる場合は %[2]s のように引数の位置を指定する。
 var messages = map[string][2]string{
 	// ---- UI ----
+	"bin login でログインしてください(CIなら BIN_TOKEN を設定)":                       {"Run `bin login` (in CI, set BIN_TOKEN)", "bin login 으로 로그인하세요 (CI는 BIN_TOKEN 설정)"},
+	"行番号は 1 始まりです。wc -l で行数を確認してください":                                 {"Line numbers start at 1. Check the line count with wc -l", "줄 번호는 1부터 시작합니다. wc -l 로 줄 수를 확인하세요"},
+	"パスが正しいか、ファイルが存在するか確認してください(パスに : や = を含む場合は --lines / --as を使う)": {"Check that the path exists (if it contains : or =, use --lines / --as)", "경로가 올바른지 확인하세요 (경로에 : 나 = 가 있으면 --lines / --as 사용)"},
+	"ID が正しいか確認してください(bin list で自分のGistを一覧)":                          {"Check the id (list your Gists with bin list)", "ID가 올바른지 확인하세요 (bin list 로 목록 확인)"},
+	"ネットワークに接続できません。接続を確認して再実行してください":                                 {"Cannot reach the network. Check your connection and retry", "네트워크에 연결할 수 없습니다. 연결을 확인하고 다시 시도하세요"},
+	"--lines はファイルが1つのときだけ使えます(複数のときは file:A-B の形で指定)":                {"--lines works with a single file only (otherwise use file:A-B)", "--lines 는 파일이 하나일 때만 사용할 수 있습니다 (여러 개면 file:A-B)"},
 	"通信中…":          {"Working…", ""},
 	"たった今":          {"just now", ""},
 	"%d分前":          {"%d min ago", ""},

@@ -201,3 +201,43 @@ func safeJoin(dir, gistPath string) (string, error) {
 func warnErr(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, "%s %s\n", yellow("!"), fmt.Sprintf(format, args...))
 }
+
+// applyFileOpts は --lines <A-B> と --as <名前>(-f)を、ファイルが1つだけのときに
+// 「file:A-B=名前」の形へ変換する。ファイルが複数のときは曖昧なのでエラーにする
+func applyFileOpts(p parsedArgs, paths []string) []string {
+	lines, _ := p.value("lines")
+	name, _ := p.value("filename")
+	var srcs []int
+	for i, x := range paths {
+		if x != "-" {
+			srcs = append(srcs, i)
+		}
+	}
+	if lines == "" && (name == "" || len(srcs) == 0) {
+		return paths
+	}
+	if len(srcs) != 1 {
+		if lines != "" {
+			fail(fmt.Errorf(T("--lines はファイルが1つのときだけ使えます(複数のときは file:A-B の形で指定)")))
+		}
+		return paths
+	}
+	out := append([]string(nil), paths...)
+	i := srcs[0]
+	if lines != "" {
+		if _, _, err := parseLineRange(lines); err != nil {
+			fail(err)
+		}
+		out[i] += ":" + lines
+	}
+	if name != "" {
+		if info, err := os.Stat(paths[i]); err == nil && info.IsDir() {
+			return paths
+		}
+		if lines == "" {
+			out[i] += ":1-" // 全体を名前付きで取り込む
+		}
+		out[i] += "=" + name
+	}
+	return out
+}
