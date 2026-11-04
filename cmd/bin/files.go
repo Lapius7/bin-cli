@@ -241,3 +241,83 @@ func applyFileOpts(p parsedArgs, paths []string) []string {
 	}
 	return out
 }
+
+// foldFileOpts は「ファイルの直後に置いた --lines / --as」をそのファイルだけに適用し、
+// file:A-B=名前 の形に畳み込んだ引数列を返す。ファイルが複数でもファイルごとに指定できる。
+// skip は先頭から数える「ファイルではない位置引数」の数(editのID=1)
+func foldFileOpts(args []string, skip int) []string {
+	type ent struct{ val, lines, as string }
+	var out []string // 位置引数は "\x00<index>" の目印で置く
+	var pos []*ent
+	last := -1
+	seen := 0
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		name, val, hasEq := a, "", false
+		if k := strings.Index(a, "="); strings.HasPrefix(a, "--") && k > 0 {
+			name, val, hasEq = a[:k], a[k+1:], true
+		}
+		if name == "--lines" || name == "--as" {
+			if !hasEq {
+				if i+1 >= len(args) {
+					fail(fmt.Errorf(T("%s には値が必要です"), name))
+				}
+				i++
+				val = args[i]
+			}
+			if last < 0 {
+				// 直前にファイルが無い場合は従来どおり全体オプションとして残す
+				out = append(out, name, val)
+				continue
+			}
+			if name == "--lines" {
+				pos[last].lines = val
+			} else {
+				pos[last].as = val
+			}
+			continue
+		}
+		if strings.HasPrefix(a, "-") && a != "-" {
+			out = append(out, a)
+			if _, ok := gistValueFlags[a]; ok && i+1 < len(args) {
+				i++
+				out = append(out, args[i])
+			}
+			continue
+		}
+		seen++
+		if seen <= skip || a == "-" {
+			out = append(out, a)
+			last = -1
+			continue
+		}
+		pos = append(pos, &ent{val: a})
+		last = len(pos) - 1
+		out = append(out, fmt.Sprintf("\x00%d", last))
+	}
+	for j, o := range out {
+		if strings.HasPrefix(o, "\x00") {
+			n := 0
+			fmt.Sscanf(o[1:], "%d", &n)
+			e := pos[n]
+			s := e.val
+			if e.lines != "" {
+				if _, _, err := parseLineRange(e.lines); err != nil {
+					fail(err)
+				}
+				s += ":" + e.lines
+			}
+			if e.as != "" {
+				if e.lines == "" {
+					if info, err := os.Stat(e.val); err == nil && info.IsDir() {
+						fail(fmt.Errorf(T("--as はフォルダには使えません: %s"), e.val))
+					}
+					s += ":1-"
+				}
+				s += "=" + e.as
+			}
+			out[j] = s
+		}
+	}
+	return out
+}

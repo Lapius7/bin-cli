@@ -350,7 +350,7 @@ func cmdLogin(args []string) {
 }
 
 func cmdCreate(args []string) {
-	p := parseArgs(args, gistValueFlags, visibilityFlags)
+	p := parseArgs(foldFileOpts(args, 0), gistValueFlags, visibilityFlags)
 	cfg, session := requireSession()
 	stdinName, _ := p.value("filename")
 	files := readInputFiles(applyFileOpts(p, p.positional), stdinName, false, true)
@@ -517,7 +517,7 @@ func cmdView(args []string) {
 }
 
 func cmdEdit(args []string) {
-	p := parseArgs(args, gistValueFlags, visibilityFlags)
+	p := parseArgs(foldFileOpts(args, 1), gistValueFlags, visibilityFlags)
 	if len(p.positional) < 1 {
 		usageExit("bin edit <id> [<file|dir>...] [--lines <A-B>] [--as <name>] [--remove <path>] [-m <message>] [-t <title>] [-d <description>] [--public|--unlisted|--private]")
 	}

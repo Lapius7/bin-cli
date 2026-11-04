@@ -5,10 +5,12 @@ package main
 // 語順が変わる場合は %[2]s のように引数の位置を指定する。
 var messages = map[string][2]string{
 	// ---- UI ----
-	"…他 %d 行": {"…%d more lines", "…%d줄 더"},
-	"%d ファイル変更、%d 行追加(+)、%d 行削除(-)":                                   {"%d file(s) changed, %d insertion(s)(+), %d deletion(s)(-)", "%d개 파일 변경, %d줄 추가(+), %d줄 삭제(-)"},
-	"bin login でログインしてください(CIなら BIN_TOKEN を設定)":                       {"Run `bin login` (in CI, set BIN_TOKEN)", "bin login 으로 로그인하세요 (CI는 BIN_TOKEN 설정)"},
-	"行番号は 1 始まりです。wc -l で行数を確認してください":                                 {"Line numbers start at 1. Check the line count with wc -l", "줄 번호는 1부터 시작합니다. wc -l 로 줄 수를 확인하세요"},
+	"%s には値が必要です":                               {"%s needs a value", "%s 에는 값이 필요합니다"},
+	"--as はフォルダには使えません: %s":                     {"--as cannot be used with a directory: %s", "--as 는 폴더에 사용할 수 없습니다: %s"},
+	"…他 %d 行":                                   {"…%d more lines", "…%d줄 더"},
+	"%d ファイル変更、%d 行追加(+)、%d 行削除(-)":             {"%d file(s) changed, %d insertion(s)(+), %d deletion(s)(-)", "%d개 파일 변경, %d줄 추가(+), %d줄 삭제(-)"},
+	"bin login でログインしてください(CIなら BIN_TOKEN を設定)": {"Run `bin login` (in CI, set BIN_TOKEN)", "bin login 으로 로그인하세요 (CI는 BIN_TOKEN 설정)"},
+	"行番号は 1 始まりです。wc -l で行数を確認してください":           {"Line numbers start at 1. Check the line count with wc -l", "줄 번호는 1부터 시작합니다. wc -l 로 줄 수를 확인하세요"},
 	"パスが正しいか、ファイルが存在するか確認してください(パスに : や = を含む場合は --lines / --as を使う)": {"Check that the path exists (if it contains : or =, use --lines / --as)", "경로가 올바른지 확인하세요 (경로에 : 나 = 가 있으면 --lines / --as 사용)"},
 	"ID が正しいか確認してください(bin list で自分のGistを一覧)":                          {"Check the id (list your Gists with bin list)", "ID가 올바른지 확인하세요 (bin list 로 목록 확인)"},
 	"ネットワークに接続できません。接続を確認して再実行してください":                                 {"Cannot reach the network. Check your connection and retry", "네트워크에 연결할 수 없습니다. 연결을 확인하고 다시 시도하세요"},
@@ -80,7 +82,6 @@ var messages = map[string][2]string{
 	"<id> にはGistのURL(https://bin.lapius7.com/<id>)もそのまま指定できます。": {"For <id> you can also pass the gist URL (https://bin.lapius7.com/<id>) as is.", "<id> 에는 Gist URL (https://bin.lapius7.com/<id>) 을 그대로 지정할 수도 있습니다."},
 
 	// ---- 引数・入力 ----
-	"%s には値が必要です":                                                      {"%s needs a value", "%s 에는 값이 필요합니다"},
 	"不明なオプションです: %s(`bin help` で使い方を表示)":                               {"Unknown option: %s (run `bin help` for usage)", "알 수 없는 옵션입니다: %s (`bin help` 로 사용법 표시)"},
 	"公開範囲の指定は1つだけにしてください":                                              {"Specify only one visibility", "공개 범위는 하나만 지정하세요"},
 	"ログインしていません。先に `bin login` を実行してください":                              {"You are not logged in. Run `bin login` first", "로그인하지 않았습니다. 먼저 `bin login` 을 실행하세요"},
