@@ -54,11 +54,17 @@ func gistPathFor(local string) string {
 
 var localRangePattern = regexp.MustCompile(`^(.+):(\d+-\d*|-\d+|\d+|@[\w.$]+|/[^/]+/,/[^/]+/)(?:=(.+))?$`)
 
+// softReadErrors は bin watch 用。読めなかったファイル(保存途中で消えた等)で終了せず飛ばす
+var softReadErrors bool
+
 type skipped struct{ path, reason string }
 
 func readLocalFile(localPath, gistPath string, out *[]GistFile, skips *[]skipped) {
 	data, err := os.ReadFile(localPath)
 	if err != nil {
+		if softReadErrors {
+			return
+		}
 		fail(fmt.Errorf(T("ファイルを読み込めません: %w"), err))
 	}
 	if len(data) > maxFileBytes {

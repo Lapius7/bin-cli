@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	qrcode "github.com/skip2/go-qrcode"
 )
@@ -515,98 +513,6 @@ func cmdSearch(args []string) {
 		usageExit("bin search <text> [-l <lang>] [--since <period>] [--tag <tag>] [-u <handle>] [-n <N>]")
 	}
 	cmdList(append([]string{"-q", args[0]}, args[1:]...))
-}
-
-// ---- bin watch ----
-
-// bin watch [<id>] <file> [--as <名前>]: ファイルを保存するたびに Gist へ反映する(Ctrl-C で終了)
-func cmdWatch(args []string) {
-	p := parseArgs(args, map[string]string{"--as": "as", "-m": "message", "--message": "message", "--interval": "interval"}, nil)
-	if len(p.positional) != 2 {
-		usageExit("bin watch [<id>] <file> [--as <name>] [--interval <sec>]")
-	}
-	cfg, session, g := ownGist(p, "bin watch [<id>] <file>")
-	local := p.positional[1]
-	name, _ := p.value("as")
-	if name == "" {
-		name = gistPathFor(local)
-	}
-	if err := validateGistPath(name); err != nil {
-		fail(err)
-	}
-	iv := time.Second
-	if v, ok := p.value("interval"); ok {
-		if f, err := strconv.ParseFloat(v, 64); err == nil && f >= 0.2 {
-			iv = time.Duration(f * float64(time.Second))
-		}
-	}
-	push := func() (bool, error) {
-		data, err := os.ReadFile(local)
-		if err != nil {
-			return false, err
-		}
-		cur, err := getGist(cfg, session, g.ID)
-		if err != nil {
-			return false, err
-		}
-		prev := cloneFiles(cur.Files)
-		next := cloneFiles(cur.Files)
-		found := false
-		for i := range next {
-			if next[i].Filename == name {
-				if next[i].Content == string(data) {
-					return false, nil
-				}
-				next[i].Content = string(data)
-				found = true
-			}
-		}
-		if !found {
-			next = append(next, GistFile{Filename: name, Content: string(data)})
-		}
-		cs := changesBetween(prev, next)
-		add, del := 0, 0
-		for _, c := range cs {
-			add += c.add
-			del += c.del
-		}
-		msg, _ := p.value("message")
-		if msg == "" {
-			msg = "watch: " + name
-		}
-		if _, err := saveGist(cfg, session, &g.ID, cur.Title, cur.Description, cur.Visibility, next, msg); err != nil {
-			return false, err
-		}
-		fmt.Fprintf(os.Stderr, "%s %s  %s %s %s\n", green("✔"), dim(time.Now().Format("15:04:05")), bold(name), green(fmt.Sprintf("+%d", add)), red(fmt.Sprintf("-%d", del)))
-		return true, nil
-	}
-	fmt.Fprintf(os.Stderr, "%s %s → %s %s\n", cyan("◉"), bold(local), gistURL(cfg, g.ID), dim(T("(Ctrl-C で終了)")))
-	if _, err := push(); err != nil {
-		fail(err)
-	}
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
-	var lastMod time.Time
-	var lastSize int64 = -1
-	tick := time.NewTicker(iv)
-	defer tick.Stop()
-	for {
-		select {
-		case <-stop:
-			fmt.Fprintln(os.Stderr, "\n"+dim(T("終了しました")))
-			return
-		case <-tick.C:
-			st, err := os.Stat(local)
-			if err != nil || (st.ModTime().Equal(lastMod) && st.Size() == lastSize) {
-				continue
-			}
-			lastMod, lastSize = st.ModTime(), st.Size()
-			time.Sleep(250 * time.Millisecond) // 保存途中を避ける
-			if _, err := push(); err != nil {
-				fmt.Fprintf(os.Stderr, "%s %v\n", red("✖"), err)
-			}
-		}
-	}
 }
 
 // ---- bin edit --editor ----

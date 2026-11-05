@@ -45,7 +45,9 @@ bin cp <id> a.js b.js                      # コピー(--to <id> / --new で別 
 bin undo [<id>] / bin restore <id> ~2      # 直前の変更を取り消す / 過去のリビジョンへ戻す(--dry-run あり)
 bin open|copy|share [<id>]                 # ブラウザで開く / クリップボードへ / URL・埋め込み・QR を表示
 bin search <text>                          # 自分の Gist を全文検索
-bin watch <id> main.js                     # 保存するたびに自動反映
+bin watch main.js                          # 新規 Gist を作り、保存するたびに自動反映
+bin watch ./src README.md -t "メモ"         # フォルダ・複数ファイルも監視(消したファイルも反映)
+bin watch <id> main.js                     # 既存 Gist へ反映(--mirror で手元に無いファイルを消す)
 bin alias set blog <id>                    # 短い名前を付ける(以降 bin edit blog …)
 bin visibility private --tag draft         # 公開範囲を一括変更 / bin bulk tag --add x
 bin edit <id> --editor                     # $EDITOR で編集して反映

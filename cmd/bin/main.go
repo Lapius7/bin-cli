@@ -56,7 +56,7 @@ func main() {
 	case "search", "find":
 		cmdSearch(args)
 	case "watch":
-		cmdWatch(withDefaultID(args))
+		cmdWatch(args)
 	case "alias", "aliases":
 		cmdAlias(args)
 	case "visibility", "vis":
@@ -161,7 +161,7 @@ func printUsage() {
 		{"bin diff [<id>] [<file>...] [--rev N]", T("ローカルと Gist(または過去リビジョン)の差分を git 風に表示する")},
 		{"bin mv <id> <old> <new> / bin cp <id> <file> <new>", T("Gist 内のファイル名変更・コピー(--to <id> 別Gistへ、--new 新規Gistへ)")},
 		{"bin undo [<id>] / bin restore <id> <rev>", T("1つ前・指定リビジョン(番号・ハッシュ・~N)の内容に戻す(--dry-run あり)")},
-		{"bin watch [<id>] <file>", T("ファイルの保存ごとに自動で Gist へ反映する(Ctrl-C で終了)")},
+		{"bin watch [<id>] <file|dir>...", T("ファイル・フォルダの保存ごとに自動で Gist へ反映する。ID なしなら新規作成(Ctrl-C で終了)")},
 		{"bin edit [<id>] <file> --editor", T("$EDITOR で開き、保存した内容を反映する")},
 	})
 	printUsageSection(T("共有・便利機能"), [][2]string{
