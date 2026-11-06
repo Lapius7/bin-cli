@@ -206,6 +206,7 @@ func cmdTry(args []string) {
 
 func cmdTryCreate(args []string) {
 	maxFileBytes = tryMaxFileBytes
+	maxGistFiles = tryMaxFiles
 	p := parseArgs(foldFileOpts(args, 0), tryValueFlags, nil)
 	includeGlobs, excludeGlobs = p.values["include"], p.values["exclude"]
 	days := 7
@@ -301,6 +302,7 @@ func cmdTryView(args []string) {
 
 func cmdTryEdit(args []string) {
 	maxFileBytes = tryMaxFileBytes
+	maxGistFiles = tryMaxFiles
 	p := parseArgs(foldFileOpts(args, 0), tryValueFlags, nil)
 	includeGlobs, excludeGlobs = p.values["include"], p.values["exclude"]
 	if len(p.positional) < 1 {

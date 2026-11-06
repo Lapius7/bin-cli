@@ -109,7 +109,7 @@ func describeDBError(err error) error {
 		{"not_authenticated", T("ログインが必要です。`bin login` を実行してください")},
 		{"not_found", T("Gistが見つかりません(存在しないか、自分のGistではありません)")},
 		{"files_required", T("ファイルを1つ以上指定してください")},
-		{"too_many_files", T("ファイルは1つのGistにつき300個までです")},
+		{"too_many_files", T("ファイルは1つのGistにつき500個までです")},
 		{"invalid_filename", T("ファイル名が不正です(1〜255文字・10階層まで。空のフォルダ名・.・..・\\ は使えません)")},
 		{"path_conflict", T("同じ名前のファイルとフォルダは同時に置けません(例: a と a/b)")},
 		{"duplicate_filename", T("同じファイル名が重複しています")},

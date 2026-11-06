@@ -16,6 +16,9 @@ import (
 
 var maxFileBytes = 50 * 1024 * 1024
 
+// maxGistFiles は1回に送れるファイル数(通常のGist)。bin try では tryMaxFiles に切り替える
+var maxGistFiles = 500
+
 // ディレクトリを読み込む時に丸ごと飛ばすもの(Web版と同じ一覧)
 var ignoredDirs = map[string]bool{
 	".git": true, "node_modules": true, ".next": true, "dist": true, "build": true,
@@ -184,8 +187,8 @@ func readInputFiles(paths []string, stdinName string, allowEmpty, implicitStdin 
 			fail(err)
 		}
 	}
-	if len(files) > 300 {
-		fail(fmt.Errorf(T("ファイルは1つのGistにつき300個までです(%d個あります)"), len(files)))
+	if len(files) > maxGistFiles {
+		fail(fmt.Errorf(T("ファイルは1つにつき%d個までです(%d個あります)"), maxGistFiles, len(files)))
 	}
 	if len(files) == 0 && !allowEmpty {
 		fail(fmt.Errorf(T("ファイルを指定するか、標準入力から渡してください(例: cat main.go | bin create -f main.go)")))
