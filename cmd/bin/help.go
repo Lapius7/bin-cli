@@ -359,8 +359,8 @@ var helpDocs = map[string]helpDoc{
 	},
 	"try": {
 		usage: []string{"bin try <create|view|edit|delete|list|token> ..."},
-		ja:    "ログインなしで使える匿名ペースト(https://bin.lapius7.com/try)。ログイン済みのGistとは別の場所に保存され、1〜100日で自動的に削除されます。1ファイル200KB・合計1MB・10ファイルまで。誰でもURLを知っていれば読めます。作成時の編集用トークンはこの端末に保存され、編集・削除に使います。",
-		en:    "Anonymous pastes without login (https://bin.lapius7.com/try). Stored apart from logged-in gists and deleted automatically after 1-100 days. Up to 200KB per file, 1MB total, 10 files. Anyone with the URL can read it. The edit token is saved on this device and used to edit or delete.",
+		ja:    "ログインなしで使える匿名ペースト(https://bin.lapius7.com/try)。ログイン済みのGistとは別の場所に保存され、1〜100日で自動的に削除されます。合計50MB・100ファイルまで。誰でもURLを知っていれば読めます。作成時の編集用トークンはこの端末に保存され、編集・削除に使います。",
+		en:    "Anonymous pastes without login (https://bin.lapius7.com/try). Stored apart from logged-in gists and deleted automatically after 1-100 days. Up to 50MB total, 100 files. Anyone with the URL can read it. The edit token is saved on this device and used to edit or delete.",
 		subs:  []string{"create", "view", "edit", "delete", "list", "token"},
 		ex:    []string{"bin try create main.go --days 30", "bin try view <id>"},
 	},
@@ -372,7 +372,7 @@ var helpDocs = map[string]helpDoc{
 			{"-t, --title <題>", "タイトル(省略可)", "Title (optional)"},
 			{"--days <日数>", "保存期間。1〜100日、既定は7日。期限が来ると自動で削除される", "Retention, 1-100 days (default 7); deleted automatically afterwards"},
 		}, optsFiles...),
-		ex: []string{"bin try create main.go --days 30", "echo hi | bin try create -f note.txt -t メモ", "url=$(bin try create a.txt 2>/dev/null)"},
+		ex: []string{"bin try create main.go --days 30", "bin try create ./ --days 1 --exclude \"*.log\" --exclude \"tmp/\"", "echo hi | bin try create -f note.txt -t メモ", "url=$(bin try create a.txt 2>/dev/null)"},
 	},
 	"try view": {
 		usage: []string{"bin try view <id|URL> [-f <file>] [--raw]"},

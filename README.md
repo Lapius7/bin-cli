@@ -53,7 +53,7 @@ bin visibility private --tag draft         # 公開範囲を一括変更 / bin b
 bin edit <id> --editor                     # $EDITOR で編集して反映
 bin create --clipboard -f note.txt         # クリップボードから作成
 
-# ログイン不要の匿名ペースト(/try。1ファイル200KB・合計1MB・10ファイル、保存1〜100日)
+# ログイン不要の匿名ペースト(/try。合計50MB・100ファイル、保存1〜100日)
 bin try create main.go --days 30             # 共有URLを作る(既定7日)。編集用トークンはこの端末に保存
 echo hi | bin try create -f note.txt -t メモ  # 標準入力からも可
 bin try view <id|url> [-f <file>]            # 表示

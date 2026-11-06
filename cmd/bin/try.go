@@ -21,9 +21,9 @@ import (
 var tryIDPattern = regexp.MustCompile(`^[0-9a-f]{20}$`)
 
 const (
-	tryMaxFiles     = 10
-	tryMaxFileBytes = 200 * 1024
-	tryMaxBytes     = 1024 * 1024
+	tryMaxFiles     = 100
+	tryMaxFileBytes = 50 * 1024 * 1024
+	tryMaxBytes     = 50 * 1024 * 1024
 )
 
 type tryPaste struct {
@@ -117,15 +117,15 @@ func tryError(status int, code string) error {
 	case status == 404:
 		return fmt.Errorf("%s", T("匿名ペーストが見つかりません(削除されたか、期限切れの可能性があります)"))
 	case status == 413:
-		return fmt.Errorf("%s", T("内容が大きすぎます(1ファイル200KB・合計1MBまで)"))
+		return fmt.Errorf("%s", T("内容が大きすぎます(合計50MB・100ファイルまで)"))
 	}
 	switch code {
 	case "file_too_large":
-		return fmt.Errorf("%s", T("1ファイル200KBまでです"))
+		return fmt.Errorf("%s", T("1ファイル50MBまでです"))
 	case "too_many_files":
-		return fmt.Errorf("%s", T("ファイルは10個までです"))
+		return fmt.Errorf("%s", T("ファイルは100個までです"))
 	case "paste_too_large":
-		return fmt.Errorf("%s", T("合計1MBまでです"))
+		return fmt.Errorf("%s", T("合計50MBまでです"))
 	case "invalid_ttl":
 		return fmt.Errorf("%s", T("保存期間は1〜100日で指定してください"))
 	}
@@ -137,18 +137,18 @@ func tryError(status int, code string) error {
 
 func checkTryFiles(files []GistFile) {
 	if len(files) > tryMaxFiles {
-		fail(fmt.Errorf("%s", T("ファイルは10個までです")))
+		fail(fmt.Errorf("%s", T("ファイルは100個までです")))
 	}
 	total := 0
 	for _, f := range files {
 		n := len(f.Content)
 		if n > tryMaxFileBytes {
-			fail(fmt.Errorf(T("%s は200KBを超えています"), f.Filename))
+			fail(fmt.Errorf(T("%s は50MBを超えています"), f.Filename))
 		}
 		total += n
 	}
 	if total > tryMaxBytes {
-		fail(fmt.Errorf("%s", T("合計1MBまでです")))
+		fail(fmt.Errorf("%s", T("合計50MBまでです")))
 	}
 }
 
@@ -205,6 +205,7 @@ func cmdTry(args []string) {
 }
 
 func cmdTryCreate(args []string) {
+	maxFileBytes = tryMaxFileBytes
 	p := parseArgs(foldFileOpts(args, 0), tryValueFlags, nil)
 	includeGlobs, excludeGlobs = p.values["include"], p.values["exclude"]
 	days := 7
@@ -299,6 +300,7 @@ func cmdTryView(args []string) {
 }
 
 func cmdTryEdit(args []string) {
+	maxFileBytes = tryMaxFileBytes
 	p := parseArgs(foldFileOpts(args, 0), tryValueFlags, nil)
 	includeGlobs, excludeGlobs = p.values["include"], p.values["exclude"]
 	if len(p.positional) < 1 {

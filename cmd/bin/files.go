@@ -14,7 +14,7 @@ import (
 // Gistのファイル名は「src/lib/util.go」のような/区切りの相対パス(サーバー側の規則と同じ:
 // 255文字以内・10階層まで・空の階層/./..不可・先頭と末尾の/不可・\不可)。
 
-const maxFileBytes = 1024 * 1024
+var maxFileBytes = 1024 * 1024
 
 // ディレクトリを読み込む時に丸ごと飛ばすもの(Web版と同じ一覧)
 var ignoredDirs = map[string]bool{
