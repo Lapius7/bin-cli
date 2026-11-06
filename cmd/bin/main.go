@@ -66,6 +66,8 @@ func main() {
 			usageExit("bin bulk <delete|visibility|tag|star|unstar> ...")
 		}
 		cmdBulk(args[0], args[1:])
+	case "try":
+		cmdTry(args)
 	case "list", "ls":
 		cmdList(args)
 	case "view", "cat", "show":
@@ -156,6 +158,14 @@ func printUsage() {
 		{"bin fork <id>", T("コピーして自分の新しいGistを作る(自分のGistも可。公開範囲は元のまま)")},
 		{"bin log <id> [-p]", T("変更履歴を git log 風に表示する(-pで差分も表示)")},
 		{"bin delete <id>", T("削除する(確認あり、-yで省略)")},
+	})
+	printUsageSection(T("ログイン不要の匿名ペースト(/try)"), [][2]string{
+		{"bin try create <file|dir>... [--days N]", T("ログインなしで共有URLを作る(1〜100日、既定7日。標準入力も可)")},
+		{"bin try view <id|url> [-f <file>]", T("内容を表示する")},
+		{"bin try edit <id|url> [<file>...] [--remove <path>] [-t <title>]", T("ファイルの追加・上書き・削除(作成した端末のトークンを使う。--tokenで指定も可)")},
+		{"bin try delete <id|url>", T("削除する(確認あり、-yで省略)")},
+		{"bin try list", T("この端末で作成した匿名ペーストの一覧")},
+		{"bin try token <id|url>", T("保存してある編集用トークンを表示する")},
 	})
 	printUsageSection(T("ファイル操作・差分"), [][2]string{
 		{"bin diff [<id>] [<file>...] [--rev N]", T("ローカルと Gist(または過去リビジョン)の差分を git 風に表示する")},

@@ -52,6 +52,14 @@ bin alias set blog <id>                    # 短い名前を付ける(以降 bin
 bin visibility private --tag draft         # 公開範囲を一括変更 / bin bulk tag --add x
 bin edit <id> --editor                     # $EDITOR で編集して反映
 bin create --clipboard -f note.txt         # クリップボードから作成
+
+# ログイン不要の匿名ペースト(/try。1ファイル200KB・合計1MB・10ファイル、保存1〜100日)
+bin try create main.go --days 30             # 共有URLを作る(既定7日)。編集用トークンはこの端末に保存
+echo hi | bin try create -f note.txt -t メモ  # 標準入力からも可
+bin try view <id|url> [-f <file>]            # 表示
+bin try edit <id|url> new.go --remove old.go # 追加・上書き・削除(--token <トークン> で他の端末からも)
+bin try delete <id|url> -y                   # 削除
+bin try list / bin try token <id>            # 作成済み一覧 / トークン表示
 bin create dir/ --exclude "*.log"          # --include / --exclude / .binignore で絞り込み
 bin patch <id> a.js --replace @init --text "..."  # 行番号の代わりに @関数名 や /開始/,/終了/ も指定可
 bin star <id> / bin starred               # スター・スターしたGistの一覧
