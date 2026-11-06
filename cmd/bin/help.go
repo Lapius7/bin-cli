@@ -402,7 +402,7 @@ var helpDocs = map[string]helpDoc{
 		en:    "List anonymous pastes created on this device (URL, title, expiry).",
 	},
 	"try token": {
-		usage: []string{"bin try token <id|URL>"},
+		usage: []string{"bin try token [<id|URL>]"},
 		ja:    "この端末に保存してある編集用トークンを表示します。",
 		en:    "Show the edit token saved on this device.",
 	},

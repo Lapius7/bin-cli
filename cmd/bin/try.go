@@ -427,8 +427,24 @@ func cmdTryList(args []string) {
 
 func cmdTryToken(args []string) {
 	p := parseArgs(args, nil, nil)
+	if len(p.positional) == 0 {
+		st := loadTryState()
+		if len(st) == 0 {
+			fmt.Println(T("この端末で作成した匿名ペーストはありません"))
+			return
+		}
+		ids := make([]string, 0, len(st))
+		for id := range st {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
+		for _, id := range ids {
+			fmt.Printf("%s  %s\n", id, st[id].Token)
+		}
+		return
+	}
 	if len(p.positional) != 1 {
-		usageExit("bin try token <id|url>")
+		usageExit("bin try token [<id|url>]")
 	}
 	id, err := parseTryID(p.positional[0])
 	if err != nil {
