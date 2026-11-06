@@ -182,7 +182,8 @@ var tryValueFlags = map[string]string{
 
 func cmdTry(args []string) {
 	if len(args) == 0 {
-		usageExit("bin try <create|view|edit|delete|list|token> ...")
+		showHelp([]string{"try"})
+		os.Exit(2)
 	}
 	rest := args[1:]
 	switch args[0] {

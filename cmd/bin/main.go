@@ -26,6 +26,11 @@ func main() {
 	}
 	args := os.Args[2:]
 
+	// `bin <コマンド> [サブコマンド] -h|--help` は、そのコマンドの詳しいヘルプを出す
+	if os.Args[1] != "help" && os.Args[1] != "-h" && os.Args[1] != "--help" && wantsHelp(args) && showHelp(os.Args[1:]) {
+		return
+	}
+
 	switch os.Args[1] {
 	case "login":
 		cmdLogin(args)
@@ -128,7 +133,11 @@ func main() {
 		cmdVersion()
 		fmt.Fprint(os.Stderr, lapiusFooter()) // 標準出力は「bin <バージョン>」の1行のまま
 	case "-h", "--help", "help":
+		if len(args) > 0 && showHelp(args) {
+			return
+		}
 		printUsage()
+		fmt.Println(dim(T("各コマンドの詳しい使い方: bin help <コマンド>(または bin <コマンド> --help)")) + "\n")
 		fmt.Print("\n" + lapiusFooter())
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n", os.Args[1])
@@ -404,6 +413,9 @@ func formatDate(iso string) string {
 
 func usageExit(usage string) {
 	fmt.Fprintln(os.Stderr, "usage: "+usage)
+	if h := helpHintFor(usage); h != "" {
+		fmt.Fprintln(os.Stderr, dim(h))
+	}
 	os.Exit(2)
 }
 
