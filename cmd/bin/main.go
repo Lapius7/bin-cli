@@ -388,8 +388,8 @@ func readStdinFile(name string) GistFile {
 	if err != nil {
 		fail(fmt.Errorf(T("標準入力を読み込めません: %w"), err))
 	}
-	if len(data) > 1024*1024 {
-		fail(fmt.Errorf(T("1ファイルあたり1MBまでです")))
+	if len(data) > maxFileBytes {
+		fail(fmt.Errorf(T("1ファイルあたり50MBまでです")))
 	}
 	if !utf8.Valid(data) {
 		fail(fmt.Errorf(T("標準入力の内容がテキスト(UTF-8)ではありません")))

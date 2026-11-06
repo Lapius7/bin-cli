@@ -105,7 +105,7 @@ func localFiles(dir string) (map[string]string, []skipped) {
 		}
 		switch {
 		case len(data) > maxFileBytes:
-			skips = append(skips, skipped{gp, T("1MB超")})
+			skips = append(skips, skipped{gp, T("サイズ超過")})
 		case !utf8.Valid(data) || strings.ContainsRune(string(data), 0):
 			skips = append(skips, skipped{gp, T("バイナリ")})
 		default:

@@ -22,8 +22,8 @@ var tryIDPattern = regexp.MustCompile(`^[0-9a-f]{20}$`)
 
 const (
 	tryMaxFiles     = 100
-	tryMaxFileBytes = 50 * 1024 * 1024
-	tryMaxBytes     = 50 * 1024 * 1024
+	tryMaxFileBytes = 30 * 1024 * 1024
+	tryMaxBytes     = 30 * 1024 * 1024
 )
 
 type tryPaste struct {
@@ -117,15 +117,15 @@ func tryError(status int, code string) error {
 	case status == 404:
 		return fmt.Errorf("%s", T("匿名ペーストが見つかりません(削除されたか、期限切れの可能性があります)"))
 	case status == 413:
-		return fmt.Errorf("%s", T("内容が大きすぎます(合計50MB・100ファイルまで)"))
+		return fmt.Errorf("%s", T("内容が大きすぎます(合計30MB・100ファイルまで)"))
 	}
 	switch code {
 	case "file_too_large":
-		return fmt.Errorf("%s", T("1ファイル50MBまでです"))
+		return fmt.Errorf("%s", T("1ファイル30MBまでです"))
 	case "too_many_files":
 		return fmt.Errorf("%s", T("ファイルは100個までです"))
 	case "paste_too_large":
-		return fmt.Errorf("%s", T("合計50MBまでです"))
+		return fmt.Errorf("%s", T("合計30MBまでです"))
 	case "invalid_ttl":
 		return fmt.Errorf("%s", T("保存期間は1〜100日で指定してください"))
 	}
@@ -143,12 +143,12 @@ func checkTryFiles(files []GistFile) {
 	for _, f := range files {
 		n := len(f.Content)
 		if n > tryMaxFileBytes {
-			fail(fmt.Errorf(T("%s は50MBを超えています"), f.Filename))
+			fail(fmt.Errorf(T("%s は30MBを超えています"), f.Filename))
 		}
 		total += n
 	}
 	if total > tryMaxBytes {
-		fail(fmt.Errorf("%s", T("合計50MBまでです")))
+		fail(fmt.Errorf("%s", T("合計30MBまでです")))
 	}
 }
 

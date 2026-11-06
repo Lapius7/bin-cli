@@ -113,8 +113,8 @@ func describeDBError(err error) error {
 		{"invalid_filename", T("ファイル名が不正です(1〜255文字・10階層まで。空のフォルダ名・.・..・\\ は使えません)")},
 		{"path_conflict", T("同じ名前のファイルとフォルダは同時に置けません(例: a と a/b)")},
 		{"duplicate_filename", T("同じファイル名が重複しています")},
-		{"file_too_large", T("1ファイルあたり1MBまでです")},
-		{"gist_too_large", T("1つのGistにつき合計5MBまでです")},
+		{"file_too_large", T("1ファイルあたり50MBまでです")},
+		{"gist_too_large", T("1つのGistにつき合計50MBまでです")},
 		{"gist_limit_exceeded", T("作成できるGistの上限に達しました")},
 	}
 	for _, t := range table {

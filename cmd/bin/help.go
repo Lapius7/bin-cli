@@ -359,8 +359,8 @@ var helpDocs = map[string]helpDoc{
 	},
 	"try": {
 		usage: []string{"bin try <create|view|edit|delete|list|token> ..."},
-		ja:    "ログインなしで使える匿名ペースト(https://bin.lapius7.com/try)。ログイン済みのGistとは別の場所に保存され、1〜100日で自動的に削除されます。合計50MB・100ファイルまで。誰でもURLを知っていれば読めます。作成時の編集用トークンはこの端末に保存され、編集・削除に使います。",
-		en:    "Anonymous pastes without login (https://bin.lapius7.com/try). Stored apart from logged-in gists and deleted automatically after 1-100 days. Up to 50MB total, 100 files. Anyone with the URL can read it. The edit token is saved on this device and used to edit or delete.",
+		ja:    "ログインなしで使える匿名ペースト(https://bin.lapius7.com/try)。ログイン済みのGistとは別の場所に保存され、1〜100日で自動的に削除されます。合計30MB・100ファイルまで。誰でもURLを知っていれば読めます。作成時の編集用トークンはこの端末に保存され、編集・削除に使います。",
+		en:    "Anonymous pastes without login (https://bin.lapius7.com/try). Stored apart from logged-in gists and deleted automatically after 1-100 days. Up to 30MB total, 100 files. Anyone with the URL can read it. The edit token is saved on this device and used to edit or delete.",
 		subs:  []string{"create", "view", "edit", "delete", "list", "token"},
 		ex:    []string{"bin try create main.go --days 30", "bin try view <id>"},
 	},
