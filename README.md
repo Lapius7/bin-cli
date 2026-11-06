@@ -68,6 +68,17 @@ bin version                                 # バージョン表示。配布中�
 
 `<id>`にはGistのURLもそのまま渡せる。
 
+## AIエージェントに使わせる
+
+Claude Code や Codex などのAIに `bin` の使い方を教えるには、次の文をそのまま渡す。
+
+```text
+https://bin.lapius7.com/cli/llms.txt を読んで、bin CLI の使い方を把握してください。
+そのうえで、次の作業を bin コマンドで行ってください: <やりたいこと>
+```
+
+`llms.txt` は、AI向けに標準出力の扱い、非対話での認証(`BIN_TOKEN`)、公開範囲の既定値、コマンド一覧、制限をまとめたもの。ファイルとして渡す場合は `curl -fsSL https://bin.lapius7.com/cli/llms.txt -o llms.txt` で取得する。CIやエージェントには、読み取り専用などに絞った `bin token create` のトークンを `BIN_TOKEN` で渡す。
+
 ### 手元のフォルダと同期
 
 ```bash
