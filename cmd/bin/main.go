@@ -60,6 +60,8 @@ func main() {
 		cmdShare(withDefaultID(args))
 	case "search", "find":
 		cmdSearch(args)
+	case "link":
+		cmdLink(args)
 	case "watch":
 		cmdWatch(args)
 	case "alias", "aliases":
@@ -181,6 +183,7 @@ func printUsage() {
 		{"bin mv <id> <old> <new> / bin cp <id> <file> <new>", T("Gist 内のファイル名変更・コピー(--to <id> 別Gistへ、--new 新規Gistへ)")},
 		{"bin undo [<id>] / bin restore <id> <rev>", T("1つ前・指定リビジョン(番号・ハッシュ・~N)の内容に戻す(--dry-run あり)")},
 		{"bin watch [<id>] <file|dir>...", T("ファイル・フォルダの保存ごとに自動で Gist へ反映する。ID なしなら新規作成(Ctrl-C で終了)")},
+		{"bin link [<dir>]", T("Discord の Lapbot からこのフォルダを読めるように待機する(Lapount で Discord 連携が必要)")},
 		{"bin edit [<id>] <file> --editor", T("$EDITOR で開き、保存した内容を反映する")},
 	})
 	printUsageSection(T("共有・便利機能"), [][2]string{

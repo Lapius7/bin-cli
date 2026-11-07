@@ -234,6 +234,16 @@ var helpDocs = map[string]helpDoc{
 		en:    "Search gists including file contents; shows the first matching line.",
 		opts:  optsFilter,
 	},
+	"link": {
+		usage: []string{"bin link [<dir>] [--name <名前>] [--allow-push] [--idle <分>]"},
+		ja:    "このフォルダを Discord の Lapbot から読めるように待機します。Lapount のアカウントページで Discord を連携しておき、Discord で /bin sync を実行すると、一覧・検索・差分などを Discord から使えます。手元のポートは開けず、操作は固定の読み取り系だけです(.env・秘密鍵は除外、Token らしき文字列は伏せます)。事前に bin discord で Discord と連携してください。",
+		en:    "Wait so that Lapbot on Discord can read this folder. Link Discord on your Lapount account page, then run /bin sync on Discord to list, search and diff files. No local port is opened; only a fixed set of read operations is allowed (.env and private keys are excluded, token-like strings are masked). Link Discord first with bin discord.",
+		opts: []helpOpt{
+			{"--name <名前>", "Discord に表示する名前(既定はフォルダ名)", "Name shown on Discord (default: folder name)"},
+			{"--allow-push", "Discord からの Gist への push も許可する", "Also allow pushing to a gist from Discord"},
+			{"--idle <分>", "操作がないまま続いたら自動で終了するまでの分数(既定 120)", "Minutes of inactivity before exiting (default 120)"},
+		},
+	},
 	"watch": {
 		usage: []string{"bin watch [<id>] <file|dir>... [-t <題>] [-d <説明>] [--public|--unlisted|--private] [--mirror] [--interval <秒>]"},
 		ja:    "ファイルの変更を監視して、変わるたびにGistへ自動で反映します。id を省略すると新しいGistを作ります。Ctrl+C で止まります。",
