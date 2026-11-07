@@ -688,6 +688,20 @@ func (r *linkRoot) handle(op string, raw json.RawMessage) (res any, err error) {
 		return r.opDiff(a)
 	case "push":
 		return r.opPush(a)
+	case "find":
+		return r.opFind(a)
+	case "recent":
+		return r.opRecent(a)
+	case "todo":
+		return r.opTodo(a)
+	case "stat":
+		return r.opStat(a)
+	case "log":
+		return r.opLog(a)
+	case "show":
+		return r.opShow(a)
+	case "deps":
+		return r.opDeps(a)
 	}
 	return nil, errors.New("未対応の操作です")
 }
