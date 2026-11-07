@@ -3,6 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -729,9 +732,9 @@ func (c *linkClient) do(method, path string, body any, timeout time.Duration) (i
 	return res.StatusCode, data, nil
 }
 
-func (c *linkClient) register(name string, allowPush bool, info any, prev string) (string, error) {
+func (c *linkClient) register(name string, allowPush bool, info any, prev, cid string) (string, error) {
 	st, data, err := c.do(http.MethodPost, "link/register", map[string]any{
-		"name": name, "allow_push": allowPush, "info": info, "session": prev,
+		"name": name, "allow_push": allowPush, "info": info, "session": prev, "cid": cid,
 	}, 15*time.Second)
 	if err != nil {
 		return "", err
@@ -789,7 +792,8 @@ func cmdLink(args []string) {
 	c := &linkClient{cfg: cfg, session: session, http: &http.Client{}}
 
 	info, _ := root.opInfo()
-	sid, err := c.register(name, root.allowPush, info, "")
+	cid := newConnID()
+	sid, err := c.register(name, root.allowPush, info, "", cid)
 	if err != nil {
 		fail(fmt.Errorf(T("接続できません: %w"), err))
 	}
@@ -797,6 +801,8 @@ func cmdLink(args []string) {
 	fmt.Printf("%s %s\n", green("●"), bold(T("待機中"))+"  "+name)
 	fmt.Printf("  %s %s\n", dim(T("フォルダ")), real)
 	fmt.Printf("  %s %s\n", dim(T("セッション")), sid)
+	fmt.Printf("  %s %s\n", dim(T("接続ID  ")), cyan(connLabel(cid)))
+	fmt.Printf("  %s %s  %s\n", dim(T("指紋    ")), cyan(connFingerprint(cid)), dim(T("← Discord の表示と同じか確認できます")))
 	if root.allowPush {
 		fmt.Printf("  %s\n", T("push を許可しています"))
 	} else {
@@ -834,7 +840,7 @@ func cmdLink(args []string) {
 			continue
 		case st == http.StatusGone:
 			// サーバーの再起動などでセッションが消えた: 登録し直す
-			ns, err := c.register(name, root.allowPush, info, sid)
+			ns, err := c.register(name, root.allowPush, info, sid, cid)
 			if err != nil {
 				time.Sleep(backoff)
 				if backoff < 30*time.Second {
@@ -870,17 +876,46 @@ func cmdLink(args []string) {
 		lastActive = time.Now()
 		started := time.Now()
 		res, herr := root.handle(job.Op, job.Args)
+		digest := ""
 		reply := map[string]any{"session": sid, "id": job.ID, "ok": herr == nil}
 		if herr != nil {
 			reply["error"] = herr.Error()
 		} else {
-			reply["result"] = res
+			// 結果は JSON 文字列のまま送り、その SHA-256 を添える(Discord 側が同じ値を計算して照合する)
+			payload, _ := json.Marshal(res)
+			sum := sha256.Sum256(payload)
+			digest = hex.EncodeToString(sum[:])
+			reply["payload"] = string(payload)
+			reply["sha256"] = digest
 		}
 		_, _, _ = c.do(http.MethodPost, "link/reply", reply, 20*time.Second)
 		status := green("✓")
 		if herr != nil {
 			status = "✗"
 		}
-		fmt.Printf("%s %s  %s %s\n", dim(time.Now().Format("15:04:05")), status, job.Op, dim(fmt.Sprintf("(%dms)", time.Since(started).Milliseconds())))
+		sum := ""
+		if digest != "" {
+			sum = " " + dim("sha256:"+digest[:12])
+		}
+		fmt.Printf("%s %s  %s %s%s\n", dim(time.Now().Format("15:04:05")), status, job.Op, dim(fmt.Sprintf("(%dms)", time.Since(started).Milliseconds())), sum)
 	}
+}
+
+// newConnID は接続(bin link の1回の実行)ごとに変わる 128 ビットの乱数。Discord 側の表示と突き合わせる指紋の元になる。
+func newConnID() string {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		fail(err)
+	}
+	return hex.EncodeToString(b)
+}
+
+// connLabel は表示用の短い接続ID
+func connLabel(cid string) string { return "lk_" + cid[:12] }
+
+// connFingerprint は接続IDの SHA-256 の先頭 64 ビットを 4 文字ずつ区切ったもの(Lapbot も同じ式で計算する)
+func connFingerprint(cid string) string {
+	sum := sha256.Sum256([]byte(cid))
+	h := hex.EncodeToString(sum[:8])
+	return h[0:4] + " " + h[4:8] + " " + h[8:12] + " " + h[12:16]
 }
