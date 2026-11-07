@@ -230,7 +230,14 @@ func (r *linkRoot) opDeps(a linkArgs) (any, error) {
 	}
 	var deps []dep
 	var sources []string
-	if txt, err := linkReadText(filepath.Join(r.dir, "package.json"), 1<<20); err == nil {
+	readIn := func(name string) (string, error) {
+		abs, _, err := r.resolve(name)
+		if err != nil {
+			return "", err
+		}
+		return linkReadText(abs, 1<<20)
+	}
+	if txt, err := readIn("package.json"); err == nil {
 		var pj struct {
 			Deps    map[string]string `json:"dependencies"`
 			Dev     map[string]string `json:"devDependencies"`
@@ -250,7 +257,7 @@ func (r *linkRoot) opDeps(a linkArgs) (any, error) {
 			}
 		}
 	}
-	if txt, err := linkReadText(filepath.Join(r.dir, "go.mod"), 1<<20); err == nil {
+	if txt, err := readIn("go.mod"); err == nil {
 		sources = append(sources, "go.mod")
 		in := false
 		for _, l := range strings.Split(txt, "\n") {
@@ -272,7 +279,7 @@ func (r *linkRoot) opDeps(a linkArgs) (any, error) {
 			}
 		}
 	}
-	if txt, err := linkReadText(filepath.Join(r.dir, "requirements.txt"), 1<<20); err == nil {
+	if txt, err := readIn("requirements.txt"); err == nil {
 		sources = append(sources, "requirements.txt")
 		for _, l := range strings.Split(txt, "\n") {
 			l = strings.TrimSpace(l)

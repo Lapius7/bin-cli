@@ -19,6 +19,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 	"unicode/utf8"
@@ -50,12 +51,14 @@ var linkDeniedNames = []string{
 	".env", ".env.*", "*.pem", "*.key", "*.p12", "*.pfx", "*.keystore", "*.jks", "*.kdbx",
 	"id_rsa*", "id_ed25519*", "id_ecdsa*", "id_dsa*", ".npmrc", ".netrc", ".pgpass", ".git-credentials",
 	"credentials", "credentials.*", "secrets.json", "secrets.yml", "secrets.yaml", "service-account*.json",
+	".htpasswd", ".pypirc", ".dockercfg", ".bash_history", ".zsh_history", ".mysql_history", ".psql_history", ".python_history", ".node_repl_history",
+	"*.tfstate", "*.tfstate.*", "*.tfvars", "*.ovpn", "*.gpg", "*.asc", "*.pgp", "*.sqlite", "*.sqlite3", "*.db", "*.secret", "*.secrets", ".secrets*", "kubeconfig", "*.kubeconfig", "wallet.dat", "*.keychain*", "*.mobileprovision", "*.cer", "*.crt.key",
 }
 
 // 名前の見た目が .env でも中身が空の雛形なので読んでよいもの
 var linkAllowedNames = map[string]bool{".env.example": true, ".env.sample": true, ".env.template": true, ".env.dist": true}
 
-var linkDeniedDirs = map[string]bool{".git": true, ".ssh": true, ".aws": true, ".gnupg": true, ".kube": true, ".docker": true}
+var linkDeniedDirs = map[string]bool{".git": true, ".ssh": true, ".aws": true, ".gnupg": true, ".kube": true, ".docker": true, ".terraform": true, ".gnupg2": true, ".password-store": true}
 
 func linkIsDenied(rel string) bool {
 	for _, part := range strings.Split(filepath.ToSlash(rel), "/") {
@@ -79,6 +82,9 @@ func linkIsDenied(rel string) bool {
 }
 
 type linkRoot struct {
+	rlMu      sync.Mutex
+	rlStart   time.Time
+	rlCount   int
 	dir       string // EvalSymlinks 済みの絶対パス
 	allowPush bool
 	ignore    ignoreSet
@@ -165,13 +171,27 @@ func (r *linkRoot) walk(start string, deadline time.Time, fn func(f linkFile) bo
 }
 
 // 返す文字列の中の秘密らしき部分を伏せる。変えたら changed=true
+// Discord に流れる文字列は一部も出さない(先頭・末尾の数文字も残さない)。
+var linkExtraRules = []*regexp.Regexp{
+	regexp.MustCompile(`\b[MNO][A-Za-z0-9_-]{23,25}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27,}\b`),                                                               // Discord bot token
+	regexp.MustCompile(`\b\d{8,10}:[A-Za-z0-9_-]{35}\b`),                                                                                                    // Telegram bot token
+	regexp.MustCompile(`\bSG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}`),                                                                                      // SendGrid
+	regexp.MustCompile(`(?i)\bbearer\s+[A-Za-z0-9._~+/=-]{20,}`),                                                                                            // Authorization: Bearer
+	regexp.MustCompile(`(?i)\b(?:[A-Z0-9_]*(?:SECRET|PASSWORD|PASSWD|TOKEN|API[_-]?KEY|PRIVATE[_-]?KEY|ACCESS[_-]?KEY)[A-Z0-9_]*)\s*[:=]\s*[^\s"'#,;]{8,}`), // KEY=値(引用符なし)
+	regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)`),                                                  // 鍵本体
+}
+
 func linkRedact(s string) (string, bool) {
 	changed := false
+	mask := func(m string) string {
+		changed = true
+		return strings.Repeat("•", 8)
+	}
 	for _, rule := range secretRules {
-		s = rule.re.ReplaceAllStringFunc(s, func(m string) string {
-			changed = true
-			return maskSample(m)
-		})
+		s = rule.re.ReplaceAllStringFunc(s, mask)
+	}
+	for _, re := range linkExtraRules {
+		s = re.ReplaceAllStringFunc(s, mask)
 	}
 	return s, changed
 }
@@ -667,6 +687,17 @@ func (r *linkRoot) handle(op string, raw json.RawMessage) (res any, err error) {
 			res, err = nil, errors.New("内部エラーが発生しました")
 		}
 	}()
+	// 1 分あたり 120 回まで(暴走・総当たり対策)
+	r.rlMu.Lock()
+	if time.Since(r.rlStart) > time.Minute {
+		r.rlStart, r.rlCount = time.Now(), 0
+	}
+	r.rlCount++
+	over := r.rlCount > 120
+	r.rlMu.Unlock()
+	if over {
+		return nil, errors.New("依頼が多すぎます。少し待ってください")
+	}
 	var a linkArgs
 	if len(raw) > 0 {
 		if e := json.Unmarshal(raw, &a); e != nil {
