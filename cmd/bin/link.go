@@ -862,8 +862,14 @@ func cmdLink(args []string) {
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-sig
-		closeSession()
+		// 先に表示して、サーバーへの通知は短い待ちで済ませる(通知に失敗しても、サーバー側が期限切れで片付ける)
 		fmt.Println("\n" + T("待機を終了しました"))
+		done := make(chan struct{})
+		go func() { closeSession(); close(done) }()
+		select {
+		case <-done:
+		case <-time.After(1500 * time.Millisecond):
+		}
 		os.Exit(0)
 	}()
 
