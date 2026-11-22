@@ -1,159 +1,196 @@
-# bin — bin.lapius7.com CLIクライアント
+<div align="center">
 
-[LapBin](https://bin.lapius7.com/)(Lapountでログインできるコード共有サービス)を、ターミナルの`bin`コマンドから使うためのCLI。Go標準ライブラリのみ、依存パッケージなし。
+<p align="center">
+  <img src="docs/images/banner.png" alt="LapBin CLI" width="100%">
+</p>
 
-## インストール
+<p align="center"><b>English</b> | <a href="README.ja.md">日本語</a></p>
 
-npm(Linux / macOS / Windows):
+<h1 align="center">LapBin CLI</h1>
+
+<h3 align="center">A CLI for bin.lapius7.com, from your terminal.</h3>
+
+<p align="center">Use <a href="https://bin.lapius7.com/">LapBin</a> (a code-sharing service with Lapount login) through the <code>bin</code> command. Written in Go; ships as a single binary.</p>
+
+<p align="center">
+  <a href="https://github.com/Lapius7/bin-cli/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Lapius7/bin-cli?label=release&style=flat-square&color=e8833a&logo=github"></a>
+  <a href="https://www.npmjs.com/package/@lapius/bin-cli"><img alt="npm" src="https://img.shields.io/npm/v/@lapius/bin-cli?style=flat-square&color=cb3837&logo=npm"></a>
+  <a href="https://go.dev"><img alt="Go" src="https://img.shields.io/badge/Go-1.22-00add8?logo=go&logoColor=white&style=flat-square"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/Lapius7/bin-cli?style=flat-square&color=97ca00"></a>
+  <a href="https://github.com/Lapius7/bin-cli/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/Lapius7/bin-cli?style=flat-square&color=e3b341&logo=github"></a>
+  <a href="https://github.com/Lapius7/bin-cli/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/Lapius7/bin-cli?label=last%20commit&style=flat-square&color=2f81f7"></a>
+</p>
+
+<p align="center"><a href="#install">Install</a> · <a href="#usage">Usage</a> · <a href="#use-it-from-ai-agents">AI agents</a> · <a href="#build-and-distribution">Build &amp; distribution</a></p>
+
+</div>
+
+---
+
+## Install
+
+With npm (Linux / macOS / Windows).
 
 ```bash
 pnpm add -g @lapius/bin-cli
 ```
 
-OS/CPUに合ったビルド済みバイナリが入る(Linux/macOSでは初回の起動時にnodeのシムがネイティブバイナリに置き換わり、以後はnodeを経由しない)。更新は同じコマンドで行う。
+This installs a prebuilt binary for your OS and CPU. On Linux and macOS, the node shim replaces itself with the native binary on first run, so node is not involved afterwards. Update with the same command.
 
-npmがない場合:
+Without npm.
 
 ```bash
 curl -fsSL https://bin.lapius7.com/install.sh | bash
 ```
 
-Goは不要。OS/CPUに合ったビルド済みバイナリを`~/.local/bin/bin`に置く(`BIN_INSTALL_DIR`で変更可)。Windowsは`https://bin.lapius7.com/cli/bin-windows-amd64.exe`を直接ダウンロードする。
+Go is not needed. The installer puts a prebuilt binary at `~/.local/bin/bin` (change it with `BIN_INSTALL_DIR`). On Windows, download `https://bin.lapius7.com/cli/bin-windows-amd64.exe` directly.
 
-## 使い方
+## Usage
+
+<details>
+<summary>Command examples (all)</summary>
 
 ```bash
-bin login                                   # ブラウザでLapountにログイン
-bin login --device                          # SSH先など、手元でブラウザが開けない場合
-bin create main.go util.go -d "説明"         # 作成(既定は限定公開)。URLだけが標準出力に出る
+bin login                                   # log in to Lapount in the browser
+bin login --device                          # when no browser is available locally, e.g. over SSH
+bin create main.go util.go -d "description" # create (unlisted by default); only the URL goes to stdout
 cat build.log | bin create -f build.log --private
-bin list                                    # 自分のGist(-u <handle> で他人の公開Gist)
-bin view <id>                               # 表示(-f <file> で1ファイルだけ生出力)
-bin edit <id> main.go --remove old.go -t "新しいタイトル" --public
-bin patch <id> main.go --insert 3 --text "// 追加"   # 特定の行だけ追加(--append / --replace 4-6 / --delete 2-3 / --after "文字列" / --before "文字列")
-bin edit <id> js/script.js --lines 70-82 --as script.js  # 行範囲とGist上の名前は別オプションでも指定できる(file:A-B=名前 と同じ)
-bin edit <id> a.js --lines 1-9 --as x.js b.js --lines 5- --as y.js  # 複数ファイルでは各ファイルの直後に付けると、そのファイルだけに効く
-bin patch <id> new.js --append --from main.go:70-84  # 無いファイルは追加系なら新規作成。本文は --text・--from <ファイル>[:A-B]・`-`(標準入力)
-bin create main.go:70-84 / bin edit <id> main.go:70-=part.js   # ローカルの行範囲だけ送る(70- は末尾まで、-20 は先頭から、=名前でGist上の名前)
-bin clone <id> [dir]                        # ファイルをダウンロード
-bin fork <id> -t "派生版"                     # コピーして自分の新しいGistを作る(自分のGistも可、公開範囲は元のまま)
-bin delete <id>                             # 削除(確認あり、-yで省略)
-bin delete <id1> <id2> -y                  # 複数まとめて削除(--tag / -q / --since で絞り込みも可、--dry-run で確認のみ)
-bin diff [<id>] [file]                     # ローカルと Gist の差分(--rev ~1 で過去版と比較)
-bin mv <id> old.js new.js                  # ファイル名変更
-bin cp <id> a.js b.js                      # コピー(--to <id> / --new で別 Gist へ)
-bin undo [<id>] / bin restore <id> ~2      # 直前の変更を取り消す / 過去のリビジョンへ戻す(--dry-run あり)
-bin open|copy|share [<id>]                 # ブラウザで開く / クリップボードへ / URL・埋め込み・QR を表示
-bin search <text>                          # 自分の Gist を全文検索
-bin watch main.js                          # 新規 Gist を作り、保存するたびに自動反映
-bin watch ./src README.md -t "メモ"         # フォルダ・複数ファイルも監視(消したファイルも反映)
-bin watch <id> main.js                     # 既存 Gist へ反映(--mirror で手元に無いファイルを消す)
-bin alias set blog <id>                    # 短い名前を付ける(以降 bin edit blog …)
-bin visibility private --tag draft         # 公開範囲を一括変更 / bin bulk tag --add x
-bin edit <id> --editor                     # $EDITOR で編集して反映
-bin create --clipboard -f note.txt         # クリップボードから作成
+bin list                                    # your gists (-u <handle> for someone else's public gists)
+bin view <id>                               # show (-f <file> prints one file raw)
+bin edit <id> main.go --remove old.go -t "new title" --public
+bin patch <id> main.go --insert 3 --text "// added"   # change only some lines (--append / --replace 4-6 / --delete 2-3 / --after "text" / --before "text")
+bin edit <id> js/script.js --lines 70-82 --as script.js  # a line range and the name on the gist can be given as separate options (same as file:A-B=name)
+bin edit <id> a.js --lines 1-9 --as x.js b.js --lines 5- --as y.js  # with several files, options placed after a file apply to that file only
+bin patch <id> new.js --append --from main.go:70-84  # a missing file is created for add operations. Body: --text, --from <file>[:A-B], or `-` (stdin)
+bin create main.go:70-84 / bin edit <id> main.go:70-=part.js   # send only a local line range (70- = to the end, -20 = from the start, =name sets the name on the gist)
+bin clone <id> [dir]                        # download the files
+bin fork <id> -t "my variant"               # copy into a new gist of your own (works on your own gists too; visibility kept)
+bin delete <id>                             # delete (asks first, -y skips)
+bin delete <id1> <id2> -y                  # delete several (filter with --tag / -q / --since, --dry-run only checks)
+bin diff [<id>] [file]                     # diff between local files and the gist (--rev ~1 compares with a past revision)
+bin mv <id> old.js new.js                  # rename a file
+bin cp <id> a.js b.js                      # copy (--to <id> / --new for another gist)
+bin undo [<id>] / bin restore <id> ~2      # undo the last change / go back to a past revision (--dry-run available)
+bin open|copy|share [<id>]                 # open in browser / copy to clipboard / show URL, embed and QR
+bin search <text>                          # full-text search your gists
+bin watch main.js                          # create a new gist and sync on every save
+bin watch ./src README.md -t "notes"       # folders and several files too (deleted files are reflected)
+bin watch <id> main.js                     # sync to an existing gist (--mirror removes files missing locally)
+bin alias set blog <id>                    # give it a short name (then bin edit blog ...)
+bin visibility private --tag draft         # change visibility in bulk / bin bulk tag --add x
+bin edit <id> --editor                     # edit in $EDITOR and apply
+bin create --clipboard -f note.txt         # create from the clipboard
 
-# ログイン不要の匿名ペースト(/try。合計30MB・100ファイル、保存1〜100日)
-bin try create main.go --days 30             # 共有URLを作る(既定7日)。編集用トークンはこの端末に保存
-echo hi | bin try create -f note.txt -t メモ  # 標準入力からも可
-bin try view <id|url> [-f <file>]            # 表示
-bin try edit <id|url> new.go --remove old.go # 追加・上書き・削除(--token <トークン> で他の端末からも)
-bin try delete <id|url> -y                   # 削除
-bin try list / bin try token <id>            # 作成済み一覧 / トークン表示
-bin create dir/ --exclude "*.log"          # --include / --exclude / .binignore で絞り込み
-bin patch <id> a.js --replace @init --text "..."  # 行番号の代わりに @関数名 や /開始/,/終了/ も指定可
-bin star <id> / bin starred               # スター・スターしたGistの一覧
-bin tag <id> python cli                     # タグを設定(bin list --tag python で絞り込み)
-bin tags                                    # 自分のタグ一覧(-u <handle> で他人)
-bin scan [<file|dir>... | <id>]             # Token・秘密鍵の混入チェック(見つかれば終了コード1。保存時にも警告)
-bin comment list|add|edit|rm ...            # コメント(add は -f <file> --line 5-7 で行コメント)
-bin collection list|show|create|add|remove|delete ...  # コレクション
-bin stats <id> [--days 30]                  # 閲覧・ダウンロード数(自分のGistのみ)
-bin forks <id>                              # フォーク一覧
-bin run <id>                                # スクリプトを実行(実行前に内容を表示して確認)
-bin version                                 # バージョン表示。配布中の最新版かどうかも確かめる
+# Anonymous paste without login (/try. 30 MB and 100 files total, kept 1 to 100 days)
+bin try create main.go --days 30             # create a share URL (default 7 days). The edit token is saved on this machine
+echo hi | bin try create -f note.txt -t memo  # stdin works too
+bin try view <id|url> [-f <file>]            # show
+bin try edit <id|url> new.go --remove old.go # add, overwrite, remove (--token <token> from another machine)
+bin try delete <id|url> -y                   # delete
+bin try list / bin try token <id>            # list what you created / show the token
+bin create dir/ --exclude "*.log"          # narrow down with --include / --exclude / .binignore
+bin patch <id> a.js --replace @init --text "..."  # instead of line numbers, @functionName or /start/,/end/ also work
+bin star <id> / bin starred               # star / list starred gists
+bin tag <id> python cli                     # set tags (filter with bin list --tag python)
+bin tags                                    # your tags (-u <handle> for someone else's)
+bin scan [<file|dir>... | <id>]             # check for leaked tokens and private keys (exit code 1 if found; also warns on save)
+bin comment list|add|edit|rm ...            # comments (add takes -f <file> --line 5-7 for line comments)
+bin collection list|show|create|add|remove|delete ...  # collections
+bin stats <id> [--days 30]                  # views and downloads (your own gists only)
+bin forks <id>                              # list forks
+bin run <id>                                # run a script (shows the content and asks first)
+bin version                                 # show the version, and whether it is the latest distributed
 ```
 
-`<id>`にはGistのURLもそのまま渡せる。
+</details>
 
-## AIエージェントに使わせる
+`<id>` also accepts a gist URL as is.
 
-Claude Code や Codex などのAIに `bin` の使い方を教えるには、次の文をそのまま渡す。
+> [!NOTE]
+> This README was rebuilt against the code and the `bin help` output. Operations that need a login, `bin link`, `bin g` and sync were not run for this rewrite.
+
+## Use it from AI agents
+
+To teach an AI such as Claude Code or Codex how to use `bin`, hand it the text below as is.
 
 ```text
-https://bin.lapius7.com/cli/llms.txt を読んで、bin CLI の使い方を把握してください。
-そのうえで、次の作業を bin コマンドで行ってください: <やりたいこと>
+Read https://bin.lapius7.com/cli/llms.txt and learn how to use the bin CLI.
+Then do the following with bin commands: <what you want done>
 ```
 
-`llms.txt` は、AI向けに標準出力の扱い、非対話での認証(`BIN_TOKEN`)、公開範囲の既定値、コマンド一覧、制限をまとめたもの。ファイルとして渡す場合は `curl -fsSL https://bin.lapius7.com/cli/llms.txt -o llms.txt` で取得する。CIやエージェントには、読み取り専用などに絞った `bin token create` のトークンを `BIN_TOKEN` で渡す。
+`llms.txt` collects what an AI needs: how stdout behaves, non-interactive auth (`BIN_TOKEN`), default visibility, the command list, and limits. To pass it as a file, fetch it with `curl -fsSL https://bin.lapius7.com/cli/llms.txt -o llms.txt`. For CI and agents, give a `bin token create` token narrowed to read-only or similar through `BIN_TOKEN`.
 
-### 手元のフォルダと同期
+### Sync with a local folder
 
 ```bash
-bin clone <id> && cd <id>   # .lapbin.json(取得した時点のリビジョンと各ファイルのSHA-256)も置かれる
-bin status                  # 手元の変更と、Gist側に新しいリビジョンがあるか
-bin pull                    # Gist側の変更を取り込む(両方で変えたファイルがあれば止まる。--forceでGist側を優先)
-bin push -m "メモ"          # 手元のフォルダの内容でGistを更新(Gist側が先に更新されていたら止まる)
-bin sync                    # pull してから、手元の変更があれば push
+bin clone <id> && cd <id>   # also writes .lapbin.json (the revision at fetch time and each file's SHA-256)
+bin status                  # local changes, and whether the gist has a newer revision
+bin pull                    # take in changes from the gist (stops if both sides changed a file; --force prefers the gist)
+bin push -m "note"          # update the gist from the local folder (stops if the gist moved first)
+bin sync                    # pull, then push if there are local changes
 ```
 
-git でも取得できる(読み取り専用): `git clone https://bin.lapius7.com/<id>.git`。非公開のGistはパスワードにAPIトークン。
+You can also fetch with git (read-only): `git clone https://bin.lapius7.com/<id>.git`. For a private gist, the password is an API token.
 
-### git と同じ操作感で使う(`bin g`)
+### Git-like usage (`bin g`)
 
-`bin g <gitのサブコマンド>` で、git とほぼ同じ引数・出力のまま Gist を扱える(既存の `bin status` などはそのまま)。
-origin=Gist、ブランチは `main` だけ。コミットは手元(`.lapbin/`)に貯まり、`push` の時に1コミット=1リビジョンとして保存される。
+`bin g <git subcommand>` handles a gist with nearly the same arguments and output as git (existing commands such as `bin status` are unchanged).
+origin is the gist, and `main` is the only branch. Commits accumulate locally (`.lapbin/`) and are saved on `push` as one revision per commit.
 
 ```bash
 bin g clone https://bin.lapius7.com/<id>.git && cd <id>
 bin g status -sb
-bin g add -A && bin g commit -m "fix"     # -am、--amend(未pushのみ)、-m なしでエディタも可
-bin g log --oneline --stat -5             # Gistのリビジョンもコミットとして並ぶ
+bin g add -A && bin g commit -m "fix"     # -am and --amend (unpushed only) work; without -m an editor opens
+bin g log --oneline --stat -5             # gist revisions are listed as commits
 bin g diff --cached / bin g diff HEAD~2 --stat / bin g show HEAD:main.py
-bin g pull                                # 未pushのコミットはGist側の変更の上に積み直す
-bin g push                                # Gist側が先に進んでいたら拒否(-f で上書き)
+bin g pull                                # unpushed commits are replayed on top of the gist's changes
+bin g push                                # refused if the gist moved first (-f overwrites)
 
-bin g init my-snippets && cd my-snippets  # 新規: 最初の push で限定公開のGistを作成(--public/--private)
+bin g init my-snippets && cd my-snippets  # new: the first push creates an unlisted gist (--public/--private)
 ```
 
-対応: `init clone status add rm mv restore checkout switch reset commit log show diff fetch pull push remote branch stash rev-parse ls-files clean`。
-`git config` の alias(例: `alias.st=status` → `bin g st`)、`-C <dir>`、`--no-pager`、ページャ(`GIT_PAGER`/`PAGER`)、ルートの `.gitignore` にも対応。
-merge・rebase・tag などGistに無い概念は使えない(Gistのタグは `bin tag`)。
+Supported: `init clone status add rm mv restore checkout switch reset commit log show diff fetch pull push remote branch stash rev-parse ls-files clean`.
+Also supported: `git config` aliases (e.g. `alias.st=status` → `bin g st`), `-C <dir>`, `--no-pager`, pagers (`GIT_PAGER`/`PAGER`), and the root `.gitignore`.
+Concepts a gist does not have, such as merge, rebase and tag, are unavailable (gist tags are `bin tag`).
 
-### APIトークン(CI・スクリプト用)
+### API tokens (for CI and scripts)
 
 ```bash
-bin token create ci --expires 90     # 発行(トークンは標準出力にだけ出る。--read で読み取り専用)
-BIN_TOKEN=sbt_… bin list            # bin login の代わりに使う
+bin token create ci --expires 90     # issue (the token goes to stdout only; --read for read-only)
+BIN_TOKEN=sbt_… bin list            # use instead of bin login
 bin token list / bin token revoke <id>
 ```
 
-トークンで使えるのはLapBinの操作だけ(bin-serverが許可リストで制限し、持ち主として動く短命のJWTに差し替えて中継する)。発行・失効は bin login したセッションからのみ。Webの /settings/tokens でも管理できる。
+A token can do LapBin operations only (bin-server restricts it with an allow list and relays it as a short-lived JWT acting as the owner). Issuing and revoking are possible only from a session logged in with `bin login`. You can also manage tokens at /settings/tokens on the web.
 
-## 仕組み
+## How it works
 
-- ログインはsca-cliと同じ2方式。`bin login`はローカルにランダムポートの一時HTTPサーバーを立て、`oauth-connect-token`(mint)で`http://127.0.0.1:<port>/callback`向けの使い捨てトークンを発行して`/oauth/v2/authorize?token=...`を開いてもらう。`--device`はdevice code方式(`oauth-device-code`関数)
-- 通信はすべて`https://bin.lapius7.com/api/`(bin-server内のリバースプロキシ)経由。ANON_KEYはプロキシだけが付与するので、このCLIには一切含まれない
-- Gistの読み書きは`bin`スキーマのDB関数(`get_gist`/`list_gists`/`save_gist`/`delete_gist`)を呼ぶだけ。権限チェックはDB側(RLS+SECURITY DEFINER関数)で行われる
-- セッションは`~/.config/bin/session.json`(0600)。アクセストークン失効時は保存済みのrefresh_tokenで自動更新する
+- Login uses the same two methods as sca-cli. `bin login` starts a temporary HTTP server on a random local port, mints a one-shot token for `http://127.0.0.1:<port>/callback` with `oauth-connect-token` (mint), and has you open `/oauth/v2/authorize?token=...`. `--device` uses the device-code flow (the `oauth-device-code` function).
+- All traffic goes through `https://bin.lapius7.com/api/` (a reverse proxy inside bin-server). Only the proxy adds the ANON_KEY, so this CLI contains none.
+- Reading and writing gists just calls DB functions in the `bin` schema (`get_gist` / `list_gists` / `save_gist` / `delete_gist`). Permission checks happen on the DB side (RLS and SECURITY DEFINER functions).
+- The session is kept in `~/.config/bin/session.json` (0600). When the access token expires, the saved refresh_token renews it automatically.
 
-## ビルド・配布
+## Build and distribution
 
 ```bash
-./build.sh    # 全OS/CPU向けにクロスコンパイルし、web/bin.lapius7.com/server/cli-dist/ へinstall.shと一緒に配置
+./build.sh    # cross-compile for every OS/CPU and place the result with install.sh in web/bin.lapius7.com/server/cli-dist/
 ```
 
-バージョンは`日付-コミットの短縮ハッシュ`(未コミットの変更があれば`-dirty`付き)。同時に`VERSION`と`build.json`(バージョン・ビルド日時・コミット・各バイナリのSHA-256)も書き出し、https://bin.lapius7.com/cli の「配布中の最新版」はこれを読んで表示する。インストーラーは最後に入ったバイナリの`bin version`を実行して、配布中の版と一致するか照合する。
+The version is `date-short commit hash` (with `-dirty` when there are uncommitted changes). The script also writes `VERSION` and `build.json` (version, build time, commit, SHA-256 of each binary). The "latest distributed" shown at https://bin.lapius7.com/cli is read from them. The installer finally runs `bin version` on the installed binary and checks it against the distributed version.
 
-bin-serverがそのディレクトリを`/install.sh`・`/cli/*`として配信するので、再起動は不要。
+bin-server serves that directory as `/install.sh` and `/cli/*`, so no restart is needed.
 
-npm版は`v*`タグをpushするとGitHub Actions(`.github/workflows/release.yml`)が`npm/build.mjs`でビルドしてnpmに公開し、GitHub Releaseにもバイナリを添付する(npmのTrusted Publisherで認証するのでトークンは不要)。手元での確認は`node npm/build.mjs 0.0.0-dev --pack`。
-npm版は`-X main.channel=npm`付きでビルドされ、`bin version`の最新版確認と更新方法の案内がnpm向けになる。
+For npm, pushing a `v*` tag makes GitHub Actions (`.github/workflows/release.yml`) build with `npm/build.mjs`, publish to npm, and attach binaries to a GitHub Release (it authenticates with npm Trusted Publisher, so no token is needed). To check locally, run `node npm/build.mjs 0.0.0-dev --pack`.
+The npm build uses `-X main.channel=npm`, so the latest-version check and the update hint in `bin version` point to npm.
 
-## 表示言語
+## Display language
 
-日本語・英語・韓国語に対応。`BIN_LANG`(ja / en / ko)、無ければ `LC_ALL`・`LC_MESSAGES`・`LANG` から判断する(未設定・C・POSIXは日本語、それ以外の未対応言語は英語)。インストーラーも同じ規則。
+Japanese, English and Korean are supported. The language comes from `BIN_LANG` (ja / en / ko), otherwise from `LC_ALL`, `LC_MESSAGES` and `LANG` (unset, C and POSIX mean Japanese; any other unsupported language means English). The installer follows the same rule.
 
-文言は日本語の文字列をそのままキーにして `T("…")` で包み(gettext方式)、英語・韓国語は `cmd/bin/messages.go` に持つ。新しい文言を足したら対応表にも追加すること(無いとその言語でも日本語のまま表示される)。英語の単数形は `Tn()` と `messagesOne`。
+Messages use the Japanese string itself as the key, wrapped in `T("…")` (gettext style); English and Korean live in `cmd/bin/messages.go`. When you add a message, add it to the table too (without it, that language also shows Japanese). English plurals use `Tn()` and `messagesOne`.
 
-開発中のサーバーに向けたい場合は`BIN_SUPABASE_URL`/`BIN_ANON_KEY`/`BIN_SITE_URL`(環境変数または`~/.config/bin/config.env`)で上書きできる。
+To point it at a development server, override `BIN_SUPABASE_URL` / `BIN_ANON_KEY` / `BIN_SITE_URL` (environment variables or `~/.config/bin/config.env`).
+
+## License
+
+MIT ([LICENSE](LICENSE))
