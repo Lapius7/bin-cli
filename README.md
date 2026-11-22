@@ -1,9 +1,5 @@
 <div align="center">
 
-<p align="center">
-  <img src="docs/images/banner.png" alt="LapBin CLI" width="100%">
-</p>
-
 <p align="center"><b>English</b> | <a href="README.ja.md">日本語</a></p>
 
 <h1 align="center">LapBin CLI</h1>
